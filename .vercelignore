@@ -1,0 +1,7 @@
+# Secrets go to Vercel as environment variables, never as uploaded files.
+.env
+.env.*
+!.env.example
+node_modules
+.next
+*.tsbuildinfo
