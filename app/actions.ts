@@ -4,14 +4,13 @@ import { revalidatePath } from "next/cache";
 import { randomInt } from "node:crypto";
 import { audienceFor } from "@/lib/analytics";
 import { requireManager } from "@/lib/auth";
-import { CERTS, certState, type CertKey } from "@/lib/certs";
 import * as db from "@/lib/db";
 import { couponCode, DAY, formatDate, renderTemplate, tierFor } from "@/lib/engine";
 import { issueRewardCoupon, onboardCustomer, recordVisit, redeemCouponByCode, removeMember, setCouponExpiry, updateMember } from "@/lib/loyalty";
 import { runAutomations } from "@/lib/runner";
 import { dispatchQueued } from "@/lib/dispatch";
 import { cloudCreds, fillTemplate, getConnection } from "@/lib/whatsapp";
-import type { AutomationRule, Campaign, Channel, Customer, Experiment, Reward, RuleType, WaTemplate } from "@/lib/types";
+import type { AutomationRule, Campaign, Channel, Customer, Reward, RuleType, WaTemplate } from "@/lib/types";
 
 export type ActionState = { ok: boolean; message: string } | null;
 
@@ -385,89 +384,6 @@ export async function launchCampaign(id: string): Promise<ActionState> {
   return attempt(() => launch(id));
 }
 
-// ---------- Experiments ----------
-
-/**
- * A/B test = two campaigns over a random 50/50 split of one audience. Results are measured from
- * real visits (see campaignStats), so the confidence figure means something.
- */
-export async function createExperiment(_: ActionState, f: FormData): Promise<ActionState> {
-  await requireManager();
-  return attempt(async () => {
-    const name = s(f, "name");
-    const offerA = s(f, "offer_a");
-    const offerB = s(f, "offer_b");
-    const segment = s(f, "segment") || "all";
-    const days = Math.min(60, Math.max(3, n(f, "days", 14)));
-    if (!name) throw new Error("Name the experiment");
-    if (!offerA || !offerB) throw new Error("Describe both offers");
-    const pool = audienceFor(await db.list("customers"), segment);
-    if (pool.length < 2) throw new Error("This audience needs at least 2 members who agreed to WhatsApp messages");
-    // Fisher–Yates shuffle with crypto randomness, then split in half.
-    const ids = pool.map((c) => c.id);
-    for (let k = ids.length - 1; k > 0; k--) {
-      const r = randomInt(k + 1);
-      [ids[k], ids[r]] = [ids[r], ids[k]];
-    }
-    const half = Math.ceil(ids.length / 2);
-    const now = Date.now();
-    const mk = (label: string, offer: string, members: string[]): Campaign => ({
-      id: db.newId("cmp"),
-      name: `${name} · ${label}`,
-      segment: "members",
-      member_ids: members,
-      channel: "whatsapp",
-      offer,
-      status: "draft",
-      starts_at: new Date(now).toISOString(),
-      ends_at: new Date(now + days * DAY).toISOString(),
-      sent: 0,
-      converted: 0,
-      revenue: 0,
-      cost: 0,
-      holdout_pct: 0,
-      holdout_ids: [],
-      wa_template: null,
-    });
-    const a = mk("A", offerA, ids.slice(0, half));
-    const b = mk("B", offerB, ids.slice(half));
-    await db.insert("campaigns", [a, b]);
-    const e: Experiment = {
-      id: db.newId("exp"),
-      name,
-      hypothesis: s(f, "hypothesis") || `${offerB} books more visits than ${offerA}`,
-      metric: "Booked a visit",
-      status: "draft",
-      started_at: new Date(now).toISOString(),
-      variants: [
-        { name: `A · ${offerA}`, users: a.member_ids.length, conversions: 0, revenue: 0, campaign_id: a.id },
-        { name: `B · ${offerB}`, users: b.member_ids.length, conversions: 0, revenue: 0, campaign_id: b.id },
-      ],
-    };
-    await db.insert("experiments", e);
-    return `Created “${name}”: ${a.member_ids.length} vs ${b.member_ids.length} members. Press Launch to send both offers.`;
-  });
-}
-
-export async function launchExperiment(id: string): Promise<ActionState> {
-  await requireManager();
-  return attempt(async () => {
-    const e = await db.get("experiments", id);
-    if (!e) throw new Error("Experiment not found");
-    if (e.status !== "draft") throw new Error("Already launched");
-    const out: string[] = [];
-    for (const v of e.variants) if (v.campaign_id) out.push(await launch(v.campaign_id));
-    await db.update("experiments", id, { status: "running", started_at: new Date().toISOString() });
-    return out.join(" · ");
-  });
-}
-
-export async function concludeExperiment(id: string) {
-  await requireManager();
-  await db.update("experiments", id, { status: "concluded" });
-  refresh();
-}
-
 // ---------- Settings ----------
 
 export async function saveSettings(_: ActionState, f: FormData): Promise<ActionState> {
@@ -475,7 +391,7 @@ export async function saveSettings(_: ActionState, f: FormData): Promise<ActionS
   return attempt(async () => {
     const patch: Record<string, unknown> = {};
     for (const k of ["salon_name", "booking_link", "whatsapp_number", "timezone"]) if (f.has(k)) patch[k] = s(f, k);
-    for (const k of ["margin_goal_pct", "reward_budget_pct", "referral_level1_points", "referral_level2_points", "tds_threshold", "tds_rate", "tds_rate_no_pan"])
+    for (const k of ["margin_goal_pct", "reward_budget_pct", "referral_level1_points", "referral_level2_points"])
       if (f.has(k)) patch[k] = n(f, k);
     if (f.has("milestone_count")) {
       const counts = f.getAll("milestone_count").map(Number);
@@ -485,35 +401,5 @@ export async function saveSettings(_: ActionState, f: FormData): Promise<ActionS
     }
     await db.update("settings", "default", patch);
     return "Settings saved";
-  });
-}
-
-// ---------- Certifications (Security page badges) ----------
-
-export async function toggleCertification(key: CertKey, on: boolean) {
-  await requireManager();
-  if (!CERTS.some((c) => c.key === key)) return;
-  const settings = await db.getSettings();
-  const prev = certState(settings.certifications, key);
-  await db.update("settings", "default", {
-    certifications: { ...settings.certifications, [key]: { ...prev, on, updated_at: new Date().toISOString() } },
-  });
-  refresh();
-}
-
-export async function saveCertEvidence(_: ActionState, f: FormData): Promise<ActionState> {
-  await requireManager();
-  return attempt(async () => {
-    const key = s(f, "key") as CertKey;
-    const cert = CERTS.find((c) => c.key === key);
-    if (!cert) throw new Error("Unknown certification");
-    const evidence = s(f, "evidence").slice(0, 300) || null;
-    if (evidence && /^https?:/i.test(evidence) && !URL.canParse(evidence)) throw new Error("That link doesn't look right");
-    const settings = await db.getSettings();
-    const prev = certState(settings.certifications, key);
-    await db.update("settings", "default", {
-      certifications: { ...settings.certifications, [key]: { ...prev, evidence, updated_at: new Date().toISOString() } },
-    });
-    return evidence ? `Evidence saved for ${cert.name}` : `Evidence cleared for ${cert.name}`;
   });
 }

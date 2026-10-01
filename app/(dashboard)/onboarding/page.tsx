@@ -53,9 +53,9 @@ export default async function Onboarding() {
               </select>
             </div>
             <div className="field"><label htmlFor="ob-r">Referral code</label><input id="ob-r" name="referral_code" className="input" placeholder="Optional" /></div>
-            <div className="field"><label htmlFor="ob-pan">PAN</label><input id="ob-pan" name="pan" className="input" placeholder="Needed for business members (194R)" style={{ textTransform: "uppercase" }} /></div>
+            <div className="field"><label htmlFor="ob-pan">PAN</label><input id="ob-pan" name="pan" className="input" placeholder="Needed for business members" style={{ textTransform: "uppercase" }} /></div>
             <label className="row" style={{ gridColumn: "1 / -1" }}><input type="checkbox" name="whatsapp_opt_in" defaultChecked /> Guest agrees to receive reminders and offers on WhatsApp</label>
-            <label className="row" style={{ gridColumn: "1 / -1" }}><input type="checkbox" name="is_business" /> Business member (stylist partner, influencer or corporate). Benefits are tracked for 194R TDS.</label>
+            <label className="row" style={{ gridColumn: "1 / -1" }}><input type="checkbox" name="is_business" /> Business member (stylist partner, influencer or corporate). PAN required.</label>
             <div style={{ gridColumn: "1 / -1" }}><Submit>Onboard member</Submit></div>
           </ActionForm>
         </Card>

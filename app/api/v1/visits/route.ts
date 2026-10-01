@@ -4,7 +4,7 @@ import { normalisePhone } from "@/lib/engine";
 import { recordVisit } from "@/lib/loyalty";
 
 export async function POST(req: Request) {
-  const denied = requireApiKey(req);
+  const denied = await requireApiKey(req);
   if (denied) return denied;
   const b = await readJson(req);
   if (b instanceof Response) return b;

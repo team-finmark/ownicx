@@ -125,9 +125,6 @@ export function CampaignReturn({ c }: { c: CampaignSummary }) {
           <CardTitle className="text-lg">Campaign return</CardTitle>
           <CardDescription>All engagements to date</CardDescription>
         </div>
-        <Button asChild variant="outline" size="sm">
-          <Link href="/experiments">P&amp;L</Link>
-        </Button>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>

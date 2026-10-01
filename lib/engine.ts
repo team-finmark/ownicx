@@ -303,55 +303,6 @@ export function planAutomations(s: Snapshot, { now, respectSendHour = false }: P
   return out;
 }
 
-// ---------- Section 194R (Income-tax Act) ----------
-// TDS on benefits/perquisites given to a resident in the course of their business/profession,
-// when the aggregate value in a financial year exceeds ₹20,000. 10% rate; 20% where PAN is not
-// furnished (s.206AA). Consumer guests receiving personal-use discounts are outside 194R, so
-// only members flagged is_business (collab stylists, influencers, corporate partners) are assessed.
-
-export function financialYear(now: number) {
-  const d = new Date(now);
-  const y = d.getUTCMonth() >= 3 ? d.getUTCFullYear() : d.getUTCFullYear() - 1;
-  return { start: Date.UTC(y, 3, 1) - 5.5 * 3_600_000, end: Date.UTC(y + 1, 3, 1) - 5.5 * 3_600_000, label: `FY ${y}-${String(y + 1).slice(-2)}` };
-}
-
-export interface TdsRow {
-  customer: Customer;
-  benefits: number;
-  count: number;
-  applicable: boolean;
-  rate: number;
-  tds: number;
-  headroom: number;
-}
-
-export function tdsReport(customers: Customer[], coupons: Coupon[], settings: Settings, now: number): TdsRow[] {
-  const fy = financialYear(now);
-  return customers
-    .filter((c) => c.is_business)
-    .map((c) => {
-      const given = coupons.filter((cp) => {
-        if (cp.customer_id !== c.id || cp.status !== "redeemed" || !cp.redeemed_at) return false;
-        const t = new Date(cp.redeemed_at).getTime();
-        return t >= fy.start && t < fy.end;
-      });
-      const benefits = given.reduce((sum, cp) => sum + cp.value, 0);
-      const applicable = benefits > settings.tds_threshold;
-      const rate = c.pan ? settings.tds_rate : settings.tds_rate_no_pan;
-      return {
-        customer: c,
-        benefits,
-        count: given.length,
-        applicable,
-        rate,
-        // Once the threshold is crossed, TDS applies on the whole aggregate value for the year.
-        tds: applicable ? Math.round((benefits * rate) / 100) : 0,
-        headroom: Math.max(0, settings.tds_threshold - benefits),
-      };
-    })
-    .sort((a, b) => b.benefits - a.benefits);
-}
-
 // ---------- KYC ----------
 
 export const PAN_RE = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
@@ -365,6 +316,6 @@ export function kycCheck(input: { phone: string; pan?: string | null; is_busines
   const phone = normalisePhone(input.phone);
   if (!/^91[6-9]\d{9}$/.test(phone)) issues.push("Phone must be a valid Indian mobile number");
   if (input.pan && !PAN_RE.test(input.pan.toUpperCase())) issues.push("PAN format should be AAAAA9999A");
-  if (input.is_business && !input.pan) issues.push("Business members need a PAN for 194R (20% TDS applies without it)");
+  if (input.is_business && !input.pan) issues.push("Business members need a PAN");
   return { phone, ok: issues.length === 0, issues };
 }

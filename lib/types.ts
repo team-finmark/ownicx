@@ -1,5 +1,3 @@
-import type { Certifications } from "./certs";
-
 // Row shapes mirror the Supabase tables in supabase/schema.sql (snake_case on purpose,
 // so rows round-trip without a mapping layer).
 
@@ -16,7 +14,7 @@ export interface Customer {
   channel: Channel;
   kyc_status: KycStatus;
   pan: string | null;
-  is_business: boolean; // 194R applies to benefits given to people carrying on a business/profession
+  is_business: boolean; // partner, influencer or corporate member (PAN required)
   whatsapp_opt_in: boolean;
   points: number; // spendable balance
   lifetime_points: number; // drives tier
@@ -81,7 +79,7 @@ export interface Coupon {
   customer_id: string | null;
   reward_id: string | null;
   label: string;
-  value: number; // ₹ benefit value (used for 194R)
+  value: number; // ₹ benefit value
   source: CouponSource;
   status: CouponStatus;
   issued_at: string;
@@ -182,24 +180,6 @@ export interface Campaign {
   holdout_ids?: string[];
 }
 
-export interface ExperimentVariant {
-  campaign_id?: string; // set when the variant runs as a real campaign (results are then measured)
-  name: string;
-  users: number;
-  conversions: number;
-  revenue: number;
-}
-
-export interface Experiment {
-  id: string;
-  name: string;
-  hypothesis: string;
-  metric: string;
-  status: "running" | "concluded" | "draft";
-  started_at: string;
-  variants: ExperimentVariant[];
-}
-
 export interface Referral {
   id: string;
   referrer_id: string;
@@ -227,10 +207,6 @@ export interface Settings {
   referral_level1_points: number;
   referral_level2_points: number;
   referral_milestones: ReferralMilestone[];
-  tds_threshold: number; // 194R: ₹20,000 per FY
-  tds_rate: number; // 10%
-  tds_rate_no_pan: number; // 20% (206AA)
-  certifications: Certifications; // Security page badges, switched on in Settings
 }
 
 export interface Manager {
@@ -275,7 +251,6 @@ export interface Tables {
   automation_rules: AutomationRule;
   messages: Message;
   campaigns: Campaign;
-  experiments: Experiment;
   referrals: Referral;
   settings: Settings;
   managers: Manager;

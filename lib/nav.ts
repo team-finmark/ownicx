@@ -73,10 +73,6 @@ export const FLAT_NAV: NavItem[] = NAV.flatMap((g) => g.items);
 /** Pages kept out of the sidebar (reached from Settings) — still named in the top bar. */
 export const PAGE_TITLES: Record<string, string> = {
   "/account": "My account",
-  "/experiments": "P&L and A/B tests",
-  "/compliance": "194R & TDS",
-  "/integrations": "API & integrations",
-  "/security": "Security",
 };
 
 /** The everyday front-desk jobs, one tap away on every page. */

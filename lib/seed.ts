@@ -3,7 +3,6 @@ import type {
   Campaign,
   Coupon,
   Customer,
-  Experiment,
   Message,
   Referral,
   Reward,
@@ -31,10 +30,6 @@ export const SETTINGS: Settings = {
     { count: 3, label: "+1,000 points", points: 1000 },
     { count: 5, label: "Special gift", points: 0 },
   ],
-  tds_threshold: 20000,
-  tds_rate: 10,
-  tds_rate_no_pan: 20,
-  certifications: {},
 };
 
 export const TIERS: Tier[] = [
@@ -299,7 +294,7 @@ export function buildSeed(now = Date.now()): Db {
     });
   });
 
-  // Business partners accumulate larger benefits (194R demo).
+  // Business partners accumulate larger benefits.
   customers
     .filter((c) => c.is_business)
     .forEach((c, k) => {
@@ -379,33 +374,6 @@ export function buildSeed(now = Date.now()): Db {
     { id: "cmp_lapsed", name: "We miss you — 120 day lapse", segment: "lapsed", member_ids: [], channel: "whatsapp", offer: "₹300 off + 20 bonus points", status: "scheduled", starts_at: iso(now + 2 * DAY), ends_at: iso(now + 16 * DAY), sent: 0, converted: 0, revenue: 0, cost: 0 },
   ];
 
-  const experiments: Experiment[] = [
-    {
-      id: "exp_reminder_day",
-      name: "Reminder timing: day 55 vs day 60",
-      hypothesis: "Nudging 5 days earlier catches guests before they book elsewhere.",
-      metric: "Rebook within 14 days",
-      status: "running",
-      started_at: iso(now - 24 * DAY),
-      variants: [
-        { name: "A · Day 60 (control)", users: 184, conversions: 51, revenue: 38250 },
-        { name: "B · Day 55", users: 179, conversions: 63, revenue: 46620 },
-      ],
-    },
-    {
-      id: "exp_offer_frame",
-      name: "Offer framing: ₹150 off vs 25 bonus points",
-      hypothesis: "Cash-off framing converts better than points for mid-tier guests.",
-      metric: "Redemption rate",
-      status: "concluded",
-      started_at: iso(now - 80 * DAY),
-      variants: [
-        { name: "A · ₹150 off", users: 240, conversions: 97, revenue: 81480 },
-        { name: "B · +25 points", users: 236, conversions: 61, revenue: 49410 },
-      ],
-    },
-  ];
-
   return {
     settings: [SETTINGS],
     tiers: TIERS,
@@ -418,7 +386,6 @@ export function buildSeed(now = Date.now()): Db {
     messages,
     referrals,
     campaigns,
-    experiments,
     managers: [], // demo manager is added in lib/db.ts (needs hashing)
     login_attempts: [],
     whatsapp_connection: [

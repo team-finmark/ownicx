@@ -1,11 +1,13 @@
 import "server-only";
-import { timingSafeEqual } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { isDemo } from "./db";
+import { clientIp, gateFail, gateStatus, lockedResponse, type GateName } from "./gate";
 
+/** Constant-time comparison that also hides the secret's length. */
 function safeEqual(a: string, b: string) {
-  const x = Buffer.from(a);
-  const y = Buffer.from(b);
-  return x.length === y.length && timingSafeEqual(x, y);
+  const x = createHash("sha256").update(a).digest();
+  const y = createHash("sha256").update(b).digest();
+  return timingSafeEqual(x, y);
 }
 
 /** Placeholder or short secrets count as "not configured": a guessable key is worse than none. */
@@ -13,33 +15,47 @@ function strong(v: string | undefined) {
   return v && v.length >= 24 && !/^change-?me$/i.test(v) ? v : undefined;
 }
 
-/** Returns an error Response when the request isn't authorised, otherwise null. */
-export function requireApiKey(req: Request): Response | null {
-  const expected = strong(process.env.OWNICX_API_KEY);
-  if (!expected) {
-    // Open only while running on throwaway demo data.
-    return isDemo() ? null : json({ error: "OWNICX_API_KEY is not configured (24+ random characters)" }, 503);
-  }
-  const got = req.headers.get("x-api-key") ?? "";
-  return safeEqual(got, expected) ? null : json({ error: "Invalid API key" }, 401);
+/**
+ * Shared gate check: locked callers are refused before the secret is even compared; a wrong secret
+ * is recorded against the caller's IP (and the gate's breaker). Returns null when the request may proceed.
+ */
+async function guard(req: Request, gate: GateName, expectedRaw: string | undefined, provided: string, missingMsg: string, deniedMsg: string): Promise<Response | null> {
+  const expected = strong(expectedRaw);
+  if (!expected) return isDemo() ? null : json({ error: missingMsg }, 503);
+  const ip = clientIp(req);
+  const status = await gateStatus(gate, ip);
+  if (status.locked) return lockedResponse(status);
+  if (safeEqual(provided, expected)) return null;
+  await gateFail(gate, ip);
+  return json({ error: deniedMsg }, 401);
 }
 
-export function requireCronSecret(req: Request): Response | null {
-  const expected = strong(process.env.CRON_SECRET);
-  if (!expected) return isDemo() ? null : json({ error: "CRON_SECRET is not configured (24+ random characters)" }, 503);
+/** REST API (POS / CRM / website): header `x-api-key`. */
+export function requireApiKey(req: Request): Promise<Response | null> {
+  return guard(req, "api", process.env.OWNICX_API_KEY, req.headers.get("x-api-key") ?? "", "OWNICX_API_KEY is not configured (24+ random characters)", "Invalid API key");
+}
+
+/** Scheduler endpoints: header `Authorization: Bearer <CRON_SECRET>`. */
+export function requireCronSecret(req: Request): Promise<Response | null> {
   const got = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
-  return safeEqual(got, expected) ? null : json({ error: "Unauthorised" }, 401);
+  return guard(req, "cron", process.env.CRON_SECRET, got, "CRON_SECRET is not configured (24+ random characters)", "Unauthorised");
 }
 
 export function json(data: unknown, status = 200) {
-  return Response.json(data, { status });
+  return Response.json(data, { status, headers: { "Cache-Control": "no-store" } });
 }
+
+export const MAX_BODY_BYTES = 64 * 1024;
 
 /** Parsed JSON object, or a 400 Response when the body isn't a JSON object. */
 export async function readJson(req: Request): Promise<Record<string, unknown> | Response> {
+  const declared = Number(req.headers.get("content-length") ?? 0);
+  if (declared > MAX_BODY_BYTES) return json({ error: "Request body too large" }, 413);
   let data: unknown;
   try {
-    data = await req.json();
+    const text = await req.text();
+    if (text.length > MAX_BODY_BYTES) return json({ error: "Request body too large" }, 413);
+    data = JSON.parse(text);
   } catch {
     return json({ error: "Request body must be valid JSON" }, 400);
   }

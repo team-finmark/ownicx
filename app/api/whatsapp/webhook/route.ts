@@ -1,6 +1,7 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { json } from "@/lib/api";
 import * as db from "@/lib/db";
+import { clientIp, gateFail, gateStatus, lockedResponse } from "@/lib/gate";
 import { onboardCustomer } from "@/lib/loyalty";
 import { cloudCreds, getConnection, sendViaCloudApi, webhookAppSecret } from "@/lib/whatsapp";
 
@@ -9,13 +10,23 @@ import { cloudCreds, getConnection, sendViaCloudApi, webhookAppSecret } from "@/
 //   POINTS                → balance + tier
 //   STOP                  → opt out of automated messages
 
+const sameSecret = (a: string, b: string) => timingSafeEqual(createHash("sha256").update(a).digest(), createHash("sha256").update(b).digest());
+const MAX_WEBHOOK_BYTES = 256 * 1024;
+
 export async function GET(req: Request) {
+  const ip = clientIp(req);
+  const status = await gateStatus("webhook", ip);
+  if (status.locked) return lockedResponse(status);
   const u = new URL(req.url);
   // The verify token is shown (and can be regenerated) in Settings → WhatsApp.
   const conn = await getConnection();
-  if (u.searchParams.get("hub.mode") === "subscribe" && u.searchParams.get("hub.verify_token") === conn.webhook_verify_token) {
-    return new Response(u.searchParams.get("hub.challenge") ?? "", { status: 200 });
+  const token = u.searchParams.get("hub.verify_token") ?? "";
+  if (u.searchParams.get("hub.mode") === "subscribe" && conn.webhook_verify_token && sameSecret(token, conn.webhook_verify_token)) {
+    // Echo only a plain challenge value (Meta sends digits) — never arbitrary input.
+    const challenge = (u.searchParams.get("hub.challenge") ?? "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 100);
+    return new Response(challenge, { status: 200, headers: { "Content-Type": "text/plain" } });
   }
+  await gateFail("webhook", ip);
   return new Response("Forbidden", { status: 403 });
 }
 
@@ -32,9 +43,17 @@ function validSignature(raw: string, header: string | null, secret: string | nul
 }
 
 export async function POST(req: Request) {
+  const ip = clientIp(req);
+  const status = await gateStatus("webhook", ip);
+  if (status.locked) return lockedResponse(status);
+  if (Number(req.headers.get("content-length") ?? 0) > MAX_WEBHOOK_BYTES) return new Response("Payload too large", { status: 413 });
   const raw = await req.text();
+  if (raw.length > MAX_WEBHOOK_BYTES) return new Response("Payload too large", { status: 413 });
   const conn = await getConnection();
-  if (!validSignature(raw, req.headers.get("x-hub-signature-256"), webhookAppSecret(conn))) return new Response("Bad signature", { status: 401 });
+  if (!validSignature(raw, req.headers.get("x-hub-signature-256"), webhookAppSecret(conn))) {
+    await gateFail("webhook", ip);
+    return new Response("Bad signature", { status: 401 });
+  }
   const creds = cloudCreds(conn);
   let payload: Inbound;
   try {

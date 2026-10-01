@@ -177,7 +177,7 @@ export function MemberActions({ member, coupons }: { member: EditableMember; cou
               </div>
               <div className="flex flex-col justify-end gap-2 text-[15px]">
                 <label className="flex items-center gap-2"><input type="checkbox" name="whatsapp_opt_in" defaultChecked={member.whatsapp_opt_in} /> Agrees to WhatsApp messages</label>
-                <label className="flex items-center gap-2"><input type="checkbox" name="is_business" defaultChecked={member.is_business} /> Business member (194R)</label>
+                <label className="flex items-center gap-2"><input type="checkbox" name="is_business" defaultChecked={member.is_business} /> Business member</label>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4 sm:col-span-2">
                 <button type="button" className="btn ghost text-red-600" onClick={remove} disabled={pending}>

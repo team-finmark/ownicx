@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import * as db from "./db";
+import { passwordFingerprint } from "./password";
 import { SESSION_COOKIE, verifySession } from "./session";
 
 /** The signed-in manager, or null. The session is re-checked against the managers table on every request. */
@@ -10,7 +11,9 @@ export const getManager = cache(async () => {
   const session = await verifySession((await cookies()).get(SESSION_COOKIE)?.value);
   if (!session) return null;
   const manager = await db.get("managers", session.sub);
-  return manager ? { id: manager.id, name: manager.name } : null;
+  // A session signed before the password last changed is dead.
+  if (!manager || session.pv !== passwordFingerprint(manager.password_hash)) return null;
+  return { id: manager.id, name: manager.name };
 });
 
 /** Use at the top of every protected page, layout and server action. */

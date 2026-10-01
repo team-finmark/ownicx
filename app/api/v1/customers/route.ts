@@ -8,7 +8,7 @@ const CHANNELS: Channel[] = ["app", "whatsapp", "walk_in", "pos"];
 const GENDERS = ["female", "male", "other"];
 
 export async function GET(req: Request) {
-  const denied = requireApiKey(req);
+  const denied = await requireApiKey(req);
   if (denied) return denied;
   const phone = new URL(req.url).searchParams.get("phone");
   if (!phone) return fail(new BadInput("phone query parameter is required"));
@@ -27,7 +27,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const denied = requireApiKey(req);
+  const denied = await requireApiKey(req);
   if (denied) return denied;
   const b = await readJson(req);
   if (b instanceof Response) return b;

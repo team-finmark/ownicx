@@ -1,5 +1,5 @@
 import "server-only";
-import { randomBytes, scrypt as scryptCb, scryptSync, timingSafeEqual, type ScryptOptions } from "node:crypto";
+import { createHash, randomBytes, scrypt as scryptCb, scryptSync, timingSafeEqual, type ScryptOptions } from "node:crypto";
 
 // Format: scrypt$<N>$<saltB64>$<hashB64>. Same format as scripts/create-manager.mjs.
 const N = 16384;
@@ -28,6 +28,11 @@ export async function verifyPassword(password: string, stored: string) {
   const expected = Buffer.from(hashB64, "base64");
   const key = await scrypt(password, Buffer.from(saltB64, "base64"), { N: Number(n), r: 8, p: 1 });
   return key.length === expected.length && timingSafeEqual(key, expected);
+}
+
+/** Short one-way tag of the stored hash, carried in the session to detect password changes. */
+export function passwordFingerprint(storedHash: string) {
+  return createHash("sha256").update(`pv:${storedHash}`).digest("base64url").slice(0, 16);
 }
 
 export function passwordProblem(password: string) {

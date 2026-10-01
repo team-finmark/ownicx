@@ -1,11 +1,14 @@
 // Signed session cookie (HMAC-SHA256 via Web Crypto, so it runs in proxy.ts and on the server).
 // No server-only import: proxy.ts needs verifySession.
 
-export const SESSION_COOKIE = "ownicx_session";
+// "__Host-" makes the browser refuse the cookie unless it is Secure, path=/ and has no Domain —
+// so no other site or subdomain can set or overwrite it. Needs HTTPS, so plain name in local dev.
+export const SESSION_COOKIE = process.env.NODE_ENV === "production" ? "__Host-ownicx_session" : "ownicx_session";
 export const SESSION_TTL_S = 12 * 60 * 60; // one working day
 
 export interface SessionPayload {
   sub: string; // manager id
+  pv: string; // password fingerprint — changing the password invalidates every other session
   name: string;
   exp: number; // unix seconds
 }

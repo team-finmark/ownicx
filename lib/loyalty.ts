@@ -1,6 +1,6 @@
 import "server-only";
 import * as db from "./db";
-import { couponCode, DAY, financialYear, formatDate, kycCheck, pointsForVisit, tierFor } from "./engine";
+import { couponCode, DAY, formatDate, kycCheck, pointsForVisit, tierFor } from "./engine";
 import { runAutomations } from "./runner";
 import type { Channel, Customer } from "./types";
 
@@ -239,7 +239,7 @@ export async function issueRewardCoupon(customerId: string, rewardId: string, va
 
 /**
  * Redeems a code at the counter. %-off coupons need the bill amount so the benefit's real ₹ value
- * is recorded (194R counts it). Two tills scanning the same code: only one wins.
+ * is recorded. Two tills scanning the same code: only one wins.
  */
 export async function redeemCouponByCode(raw: string, bill?: unknown) {
   const code = raw.trim().toUpperCase();
@@ -303,22 +303,10 @@ export async function updateMember(id: string, input: MemberEdit) {
 
 /**
  * Permanently deletes a member with their visits, coupons, messages and referral links.
- * Business members who received benefits this financial year are kept: that history is the 194R record.
  */
 export async function removeMember(id: string) {
-  const [c, referred, coupons, settings] = await Promise.all([db.get("customers", id), db.query("customers", { eq: { referred_by: id } }), db.query("coupons", { eq: { customer_id: id } }), db.getSettings()]);
+  const [c, referred, coupons] = await Promise.all([db.get("customers", id), db.query("customers", { eq: { referred_by: id } }), db.query("coupons", { eq: { customer_id: id } })]);
   if (!c) throw new Error("Member not found");
-  if (c.is_business) {
-    const fy = financialYear(Date.now());
-    const benefits = coupons
-      .filter((cp) => cp.customer_id === id && cp.status === "redeemed" && cp.redeemed_at && new Date(cp.redeemed_at).getTime() >= fy.start)
-      .reduce((a, cp) => a + cp.value, 0);
-    if (benefits > 0) {
-      throw new Error(
-        `${c.name} received ₹${benefits.toLocaleString("en-IN")} in benefits this ${fy.label}, which must stay on record for 194R (threshold ₹${settings.tds_threshold.toLocaleString("en-IN")}). Turn off their WhatsApp messages instead, or remove them after the year closes.`,
-      );
-    }
-  }
   // People they referred stay members; only the link is cleared.
   for (const r of referred) await db.update("customers", r.id, { referred_by: null });
   if (db.isDemo()) {

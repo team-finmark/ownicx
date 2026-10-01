@@ -93,13 +93,26 @@ All endpoints take the header `x-api-key: $OWNICX_API_KEY`.
 - **Tiers & ranks**: thresholds, multipliers, perks (re-ranks members on save)
 - **Referrals**: two-level mechanics and milestone badges · **Leaderboard**: points, visits, referrals
 - **Program design**: behavioural loops mapped to KPIs, margin and budget guardrails, managed-service view, QBR agenda
-- **P&L and A/B tests**: cost vs revenue, experiments with significance testing
-- **194R & TDS**: per-FY benefit aggregation for business members, 10% / 20% (no PAN) rates, 26Q CSV export
-- **API & integrations / Security**
+
+## Security
+
+Every entry point has a gate. All of it is built in and free (no paid WAF or service).
+
+| Gate | Protection |
+|---|---|
+| Every request (`proxy.ts`) | Allowed methods per route (else 405), per-IP rate limits (page loads 300/min, background fetches 1,500/min, form posts 60/min, API 120/min, scheduler 30/min, webhook 600/min), security headers on every response: nonce-based Content-Security-Policy, HSTS, `X-Frame-Options: DENY`, `nosniff`, strict Referrer- and Permissions-Policy, `no-store` caching |
+| Dashboard pages | Signed-in managers only. The session is checked in the proxy, again in the layout and in every server action. Next.js also rejects cross-site form posts |
+| Sign-in | Per-name lock (10 fails / 15 min, any IP) plus an escalating per-IP lock (15 min, doubling up to 24 h). Constant-time password check, no hint whether a name exists |
+| Session cookie | `__Host-` prefixed, HttpOnly, Secure, SameSite=Strict, signed (HMAC-SHA256), 12 h, tied to the password: changing it signs out every other device |
+| REST API `/api/v1/*` | API key (24+ chars, constant-time compare) + **lockout gate**: 10 bad keys locks that IP (escalating), 200 bad keys from any IPs in 10 min locks the whole gate for 10 min. 64 KB body cap |
+| Scheduler `/api/automations/run`, `/api/messages/dispatch` | Cron secret + lockout gate (5 bad secrets per IP; 50 across IPs locks the gate) |
+| WhatsApp webhook | Meta HMAC signature + verify token (constant-time), lockout gate, 256 KB cap, challenge echo sanitised |
+
+Lockout state lives in the `login_attempts` table, shared by all server instances and kept across restarts. Gates **fail closed**: if the lock state can't be read, the request is refused.
+
+Rate limits are per server instance (best-effort); the database-backed lockouts are the hard stop.
 
 ## Notes
 
 - **Font:** the UI uses the San Francisco family through the system stack (`-apple-system`, `SF Pro`). Apple's licence doesn't allow bundling SF, so Windows/Android devices without SF Pro installed fall back to their system font.
-- **194R:** the logic follows the Act (₹20,000 FY threshold, 10%, 20% without PAN under 206AA) and deliberately excludes personal-use guest discounts. Confirm treatment with your tax advisor.
-- **Security page:** certification badges (ISO 27001, ISO 9001, GDPR/DPDP, OWASP, CWE/SANS) are switched on by the manager in **Settings → Certifications & trust badges**, with an optional certificate number or report link. Only switch one on once the certificate or test report exists.
 - The performance figures on the API page are **targets**, not measured values.
