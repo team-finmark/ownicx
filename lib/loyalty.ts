@@ -1,6 +1,6 @@
 import "server-only";
 import * as db from "./db";
-import { couponCode, DAY, formatDate, kycCheck, pointsForVisit, tierFor } from "./engine";
+import { couponCode, DAY, formatDate, normalisePhone, pointsForVisit, tierFor } from "./engine";
 import { runAutomations } from "./runner";
 import type { Channel, Customer } from "./types";
 
@@ -18,8 +18,9 @@ export async function onboardCustomer(input: {
   whatsapp_opt_in: boolean;
   referral_code?: string | null;
 }) {
-  const kyc = kycCheck(input);
-  if ((await db.count("customers", { eq: { phone: kyc.phone } })) > 0) throw new Error("A member with this phone number already exists");
+  const phone = normalisePhone(input.phone);
+  if (!/^\d{10,15}$/.test(phone)) throw new Error("Enter a valid mobile number");
+  if ((await db.count("customers", { eq: { phone } })) > 0) throw new Error("A member with this phone number already exists");
   const tiers = await db.list("tiers");
   const referrer = input.referral_code ? (await db.query("customers", { eq: { referral_code: input.referral_code.trim().toUpperCase() }, limit: 1 }))[0] ?? null : null;
   if (input.referral_code && !referrer) throw new Error("Referral code not found");
@@ -28,13 +29,11 @@ export async function onboardCustomer(input: {
   const customer: Customer = {
     id: db.newId("c"),
     name: input.name.trim(),
-    phone: kyc.phone,
+    phone,
     email: input.email || null,
     gender: input.gender ?? null,
     birthday: input.birthday || null,
     channel: input.channel,
-    // Automated KYC: phone + PAN format pass → verified; anything flagged waits for staff review.
-    kyc_status: kyc.ok ? "verified" : "pending",
     pan: input.pan ? input.pan.toUpperCase() : null,
     is_business: !!input.is_business,
     whatsapp_opt_in: input.whatsapp_opt_in,
@@ -68,7 +67,7 @@ export async function onboardCustomer(input: {
       })),
     );
   }
-  return { customer, kyc };
+  return customer;
 }
 
 /**
@@ -274,31 +273,25 @@ export interface MemberEdit {
   pan: string | null;
   is_business: boolean;
   whatsapp_opt_in: boolean;
-  kyc_status: Customer["kyc_status"];
 }
 
 export async function updateMember(id: string, input: MemberEdit) {
   const c = await db.get("customers", id);
   if (!c) throw new Error("Member not found");
   if (!input.name.trim()) throw new Error("Name is required");
-  const kyc = kycCheck({ phone: input.phone, pan: input.pan, is_business: input.is_business });
-  if (!/^\d{10,15}$/.test(kyc.phone)) throw new Error("Enter a valid mobile number");
-  if ((await db.query("customers", { eq: { phone: kyc.phone }, limit: 2 })).some((o) => o.id !== id)) throw new Error(`Another member already uses +${kyc.phone}`);
-  const pan = input.pan ? input.pan.toUpperCase() : null;
-  const identityChanged = kyc.phone !== c.phone || pan !== c.pan || input.is_business !== c.is_business;
+  const phone = normalisePhone(input.phone);
+  if (!/^\d{10,15}$/.test(phone)) throw new Error("Enter a valid mobile number");
+  if ((await db.query("customers", { eq: { phone }, limit: 2 })).some((o) => o.id !== id)) throw new Error(`Another member already uses +${phone}`);
   await db.update("customers", id, {
     name: input.name.trim(),
-    phone: kyc.phone,
+    phone,
     email: input.email || null,
     gender: input.gender || null,
     birthday: input.birthday || null,
-    pan,
+    pan: input.pan ? input.pan.toUpperCase() : null,
     is_business: input.is_business,
     whatsapp_opt_in: input.whatsapp_opt_in,
-    // A manager's explicit KYC choice wins; otherwise re-run the automatic checks when identity details change.
-    kyc_status: input.kyc_status !== c.kyc_status ? input.kyc_status : identityChanged ? (kyc.ok ? "verified" : "pending") : c.kyc_status,
   });
-  return { issues: identityChanged ? kyc.issues : [] };
 }
 
 /**

@@ -123,7 +123,6 @@ async function add() {
       gender: p.gender,
       birthday: `199${(i * 3) % 10}-${String(1 + ((i * 5) % 12)).padStart(2, "0")}-${String(3 + i * 2).padStart(2, "0")}`,
       channel: p.channel,
-      kyc_status: "verified",
       pan: null,
       is_business: false,
       whatsapp_opt_in: true,

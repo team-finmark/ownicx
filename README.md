@@ -77,7 +77,7 @@ All endpoints take the header `x-api-key: $OWNICX_API_KEY`.
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/api/v1/customers?phone=91…` | Member lookup: points, tier, live coupons |
-| POST | `/api/v1/customers` | Enrol (KYC + referral) |
+| POST | `/api/v1/customers` | Enrol (with optional referral code) |
 | POST | `/api/v1/visits` | `{ phone \| customer_id, service_id, amount? }` → awards points, upgrades tier, fires milestone offers |
 | POST | `/api/v1/coupons/redeem` | `{ code }` |
 | GET | `/api/automations/run` | Cron entrypoint (`?force=1` ignores send hours) |
@@ -86,7 +86,7 @@ All endpoints take the header `x-api-key: $OWNICX_API_KEY`.
 ## What's in the dashboard
 
 - **Overview**: member revenue, active members, repeat rate, loyalty cost vs budget, churn signals, tier mix
-- **Members / Onboarding & KYC**: record visits, redeem rewards, WhatsApp QR sign-up, automated phone/PAN checks, review queue
+- **Members / Onboarding**: record visits, redeem rewards, WhatsApp QR sign-up
 - **Engagements**: audience-specific campaigns queued through the Outbox
 - **Automations / Outbox**: the WhatsApp AI rules above
 - **Rewards & coupons**: catalogue, tier-locked rewards, bulk code generation, counter redemption

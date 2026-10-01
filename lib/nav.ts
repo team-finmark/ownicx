@@ -40,7 +40,7 @@ export const NAV: { label: string; items: NavItem[] }[] = [
     items: [
       { href: "/", label: "Overview", icon: "home" },
       { href: "/customers", label: "Members", icon: "users" },
-      { href: "/onboarding", label: "Onboarding & KYC", icon: "onboard" },
+      { href: "/onboarding", label: "Onboarding", icon: "onboard" },
       { href: "/campaigns", label: "Engagements", icon: "target" },
     ],
   },

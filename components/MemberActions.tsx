@@ -26,7 +26,6 @@ export interface EditableMember {
   pan: string | null;
   is_business: boolean;
   whatsapp_opt_in: boolean;
-  kyc_status: "pending" | "verified" | "rejected";
 }
 
 export interface MemberCoupon {
@@ -169,12 +168,6 @@ export function MemberActions({ member, coupons }: { member: EditableMember; cou
                 </select>
               </div>
               <div className="field"><label htmlFor="ed-pan">PAN</label><input id="ed-pan" name="pan" className="input" defaultValue={member.pan ?? ""} style={{ textTransform: "uppercase" }} placeholder="AAAAA9999A" /></div>
-              <div className="field">
-                <label htmlFor="ed-kyc">KYC status</label>
-                <select id="ed-kyc" name="kyc_status" className="select" defaultValue={member.kyc_status}>
-                  <option value="verified">Verified</option><option value="pending">Pending review</option><option value="rejected">Rejected</option>
-                </select>
-              </div>
               <div className="flex flex-col justify-end gap-2 text-[15px]">
                 <label className="flex items-center gap-2"><input type="checkbox" name="whatsapp_opt_in" defaultChecked={member.whatsapp_opt_in} /> Agrees to WhatsApp messages</label>
                 <label className="flex items-center gap-2"><input type="checkbox" name="is_business" defaultChecked={member.is_business} /> Business member</label>

@@ -116,7 +116,7 @@ export async function onboardAction(_: ActionState, f: FormData): Promise<Action
   return attempt(async () => {
     const name = s(f, "name");
     if (!name) throw new Error("Name is required");
-    const { customer, kyc } = await onboardCustomer({
+    const customer = await onboardCustomer({
       name,
       phone: s(f, "phone"),
       email: s(f, "email") || null,
@@ -128,20 +128,14 @@ export async function onboardAction(_: ActionState, f: FormData): Promise<Action
       whatsapp_opt_in: f.get("whatsapp_opt_in") === "on",
       referral_code: s(f, "referral_code") || null,
     });
-    return kyc.ok ? `${customer.name} is in — KYC auto-verified. Referral code ${customer.referral_code}.` : `${customer.name} added; KYC needs review: ${kyc.issues.join("; ")}`;
+    return `${customer.name} is in. Referral code ${customer.referral_code}.`;
   });
-}
-
-export async function setKyc(id: string, status: "verified" | "rejected") {
-  await requireManager();
-  await db.update("customers", id, { kyc_status: status });
-  refresh();
 }
 
 export async function updateMemberAction(_: ActionState, f: FormData): Promise<ActionState> {
   await requireManager();
   return attempt(async () => {
-    const { issues } = await updateMember(s(f, "id"), {
+    await updateMember(s(f, "id"), {
       name: s(f, "name"),
       phone: s(f, "phone"),
       email: s(f, "email") || null,
@@ -150,9 +144,8 @@ export async function updateMemberAction(_: ActionState, f: FormData): Promise<A
       pan: s(f, "pan") || null,
       is_business: f.get("is_business") === "on",
       whatsapp_opt_in: f.get("whatsapp_opt_in") === "on",
-      kyc_status: (s(f, "kyc_status") || "pending") as Customer["kyc_status"],
     });
-    return issues.length ? `Saved. KYC needs review: ${issues.join("; ")}` : `Saved ${s(f, "name")}`;
+    return `Saved ${s(f, "name")}`;
   });
 }
 

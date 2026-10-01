@@ -109,7 +109,7 @@ export async function POST(req: Request) {
               reply = `You're already a member, ${member.name.split(" ")[0]} 💛 You have ${member.points} points.`;
             } else {
               try {
-                const { customer } = await onboardCustomer({ name: profileName, phone: msg.from, channel: "whatsapp", whatsapp_opt_in: true, referral_code: arg ?? null });
+                const customer = await onboardCustomer({ name: profileName, phone: msg.from, channel: "whatsapp", whatsapp_opt_in: true, referral_code: arg ?? null });
                 await markHandled(msg.id, customer.id, text);
                 reply = `Welcome to ${settings.salon_name} rewards, ${customer.name.split(" ")[0]}! 🎉 You'll earn points on every visit. Your referral code is ${customer.referral_code}. Share it with friends and earn when they visit. Reply STOP anytime to opt out.`;
               } catch (e) {

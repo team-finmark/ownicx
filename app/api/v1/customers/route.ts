@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     const email = optStr(b.email, "email", 200);
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new BadInput("email doesn't look valid");
 
-    const { customer, kyc } = await onboardCustomer({
+    const customer = await onboardCustomer({
       name,
       phone,
       email,
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
       whatsapp_opt_in: optBool(b.whatsapp_opt_in, "whatsapp_opt_in"),
       referral_code: optStr(b.referral_code_used, "referral_code_used", 20),
     });
-    return json({ id: customer.id, referral_code: customer.referral_code, kyc_status: customer.kyc_status, kyc_issues: kyc.issues }, 201);
+    return json({ id: customer.id, referral_code: customer.referral_code }, 201);
   } catch (e) {
     // Duplicate phone / unknown referral code are conflicts; everything else is bad input.
     return fail(e, e instanceof Error && /already exists|Referral code/.test(e.message) ? 409 : 400);

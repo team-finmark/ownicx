@@ -303,19 +303,10 @@ export function planAutomations(s: Snapshot, { now, respectSendHour = false }: P
   return out;
 }
 
-// ---------- KYC ----------
+// ---------- Phone ----------
 
-export const PAN_RE = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
 export function normalisePhone(raw: string) {
   const digits = raw.replace(/\D/g, "");
   if (digits.length === 10) return `91${digits}`;
   return digits;
-}
-export function kycCheck(input: { phone: string; pan?: string | null; is_business?: boolean }) {
-  const issues: string[] = [];
-  const phone = normalisePhone(input.phone);
-  if (!/^91[6-9]\d{9}$/.test(phone)) issues.push("Phone must be a valid Indian mobile number");
-  if (input.pan && !PAN_RE.test(input.pan.toUpperCase())) issues.push("PAN format should be AAAAA9999A");
-  if (input.is_business && !input.pan) issues.push("Business members need a PAN");
-  return { phone, ok: issues.length === 0, issues };
 }

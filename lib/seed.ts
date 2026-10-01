@@ -226,7 +226,6 @@ export function buildSeed(now = Date.now()): Db {
       gender: female ? "female" : "male",
       birthday: `199${Math.floor(rnd() * 10)}-${String(1 + Math.floor(rnd() * 12)).padStart(2, "0")}-${String(1 + Math.floor(rnd() * 28)).padStart(2, "0")}`,
       channel: pick(["app", "whatsapp", "whatsapp", "walk_in", "pos"] as const),
-      kyc_status: rnd() < 0.82 ? "verified" : "pending",
       pan: rnd() < 0.3 ? `ABCP${String.fromCharCode(65 + (i % 26))}${String(1000 + i).slice(-4)}K` : null,
       is_business: i % 11 === 4, // a few stylists/influencers who partner with the salon
       whatsapp_opt_in: rnd() < 0.9,

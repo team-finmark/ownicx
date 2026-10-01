@@ -111,7 +111,7 @@ export default async function Members({ searchParams }: { searchParams: Promise<
           <table className="tbl">
             <thead>
               <tr>
-                <th>Member</th><th>Tier</th><th className="r">Points</th><th>Next tier</th><th className="r">Visits</th><th className="r">Spend</th><th>Last visit</th><th>Live offers</th><th>KYC</th><th>WhatsApp</th><th className="sticky-end" style={{ width: 56 }} />
+                <th>Member</th><th>Tier</th><th className="r">Points</th><th>Next tier</th><th className="r">Visits</th><th className="r">Spend</th><th>Last visit</th><th>Live offers</th><th>WhatsApp</th><th className="sticky-end" style={{ width: 56 }} />
               </tr>
             </thead>
             <tbody>
@@ -148,11 +148,10 @@ export default async function Members({ searchParams }: { searchParams: Promise<
                       )}
                       {live.length > 2 && <span className="muted" style={{ fontSize: 12.5 }}>+{live.length - 2} more</span>}
                     </td>
-                    <td><Badge tone={c.kyc_status === "verified" ? "good" : c.kyc_status === "pending" ? "warn" : "bad"}>{c.kyc_status}</Badge></td>
                     <td>{c.whatsapp_opt_in ? <Badge tone="good">Opted in</Badge> : <Badge>No</Badge>}</td>
                     <td className="sticky-end">
                       <MemberActions
-                        member={{ id: c.id, name: c.name, phone: c.phone, email: c.email, gender: c.gender, birthday: c.birthday, pan: c.pan, is_business: c.is_business, whatsapp_opt_in: c.whatsapp_opt_in, kyc_status: c.kyc_status }}
+                        member={{ id: c.id, name: c.name, phone: c.phone, email: c.email, gender: c.gender, birthday: c.birthday, pan: c.pan, is_business: c.is_business, whatsapp_opt_in: c.whatsapp_opt_in }}
                         coupons={mine}
                       />
                     </td>

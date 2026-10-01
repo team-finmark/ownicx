@@ -98,7 +98,7 @@ export default async function Overview() {
     services: ranked,
     actions: [
       { href: "/customers#record", title: "Record a visit", description: `Awards points instantly · ${nearMilestone} guests are close to the ${threshold}-point offer`, icon: "scissors" },
-      { href: "/onboarding#add", title: "Add a member", description: "Walk-in, POS or WhatsApp signup with automatic KYC", icon: "user-plus" },
+      { href: "/onboarding#add", title: "Add a member", description: "Walk-in, POS or WhatsApp signup", icon: "user-plus" },
       { run: true, title: "Run automations now", description: "Check every rule and queue today's WhatsApp messages", icon: "zap", badge: plan.length ? `${plan.length} due` : undefined },
       { href: "/outbox", title: "Open the outbox", description: "Send queued WhatsApp messages with one tap", icon: "send", badge: queued ? `${queued} queued` : undefined },
       { href: "/rewards#redeem", title: "Redeem a coupon", description: `${liveOffers.length} live offers · ${expiringSoon} expire within 3 days`, icon: "ticket" },

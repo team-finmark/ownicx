@@ -2,7 +2,6 @@
 // so rows round-trip without a mapping layer).
 
 export type Channel = "app" | "whatsapp" | "walk_in" | "pos";
-export type KycStatus = "pending" | "verified" | "rejected";
 
 export interface Customer {
   id: string;
@@ -12,7 +11,6 @@ export interface Customer {
   gender: "female" | "male" | "other" | null;
   birthday: string | null; // YYYY-MM-DD
   channel: Channel;
-  kyc_status: KycStatus;
   pan: string | null;
   is_business: boolean; // partner, influencer or corporate member (PAN required)
   whatsapp_opt_in: boolean;
