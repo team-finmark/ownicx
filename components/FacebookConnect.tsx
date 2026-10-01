@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ActionState } from "@/app/actions";
 import { completeFacebookSignup } from "@/app/whatsapp-actions";
-import { Toast } from "./forms";
+import { safely, Toast } from "./forms";
 import { Button } from "@/components/ui/button";
 
 // Meta Embedded Signup: the manager signs in with Facebook, picks (or creates) their WhatsApp
@@ -90,7 +90,7 @@ export function FacebookConnect({ appId, configId, connected }: { appId: string;
           // The number's IDs arrive by postMessage just before/after this callback.
           void (async () => {
             for (let i = 0; i < 20 && !ids.current.phoneNumberId; i++) await new Promise((r) => setTimeout(r, 250));
-            const r = await completeFacebookSignup({ code, phoneNumberId: ids.current.phoneNumberId ?? "", wabaId: ids.current.wabaId ?? "" });
+            const r = await safely(() => completeFacebookSignup({ code, phoneNumberId: ids.current.phoneNumberId ?? "", wabaId: ids.current.wabaId ?? "" }));
             setState(r);
             setBusy(false);
           })();

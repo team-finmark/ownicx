@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { ChevronRight, Megaphone, Scissors, Send, Ticket, UserPlus, Zap } from "lucide-react";
 import { runAutomationsNow } from "@/app/actions";
-import { Toast } from "@/components/forms";
+import { safely, Toast } from "@/components/forms";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemSeparator, ItemTitle } from "@/components/ui/item";
@@ -37,7 +37,7 @@ function Row({ a }: { a: QuickAction }) {
 }
 
 function RunRow({ a }: { a: QuickAction }) {
-  const [state, action, pending] = useActionState(runAutomationsNow, null);
+  const [state, action, pending] = useActionState((s: Parameters<typeof runAutomationsNow>[0]) => safely(() => runAutomationsNow(s)), null);
   const Icon = ICONS[a.icon];
   return (
     <form action={action}>

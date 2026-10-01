@@ -1,6 +1,7 @@
 import "server-only";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { isDemo } from "./db";
+import { DbError, GENERIC_ERROR } from "./errors";
 import { clientIp, gateFail, gateStatus, lockedResponse, type GateName } from "./gate";
 
 /** Constant-time comparison that also hides the secret's length. */
@@ -94,9 +95,21 @@ export const optBool = (v: unknown, field: string): boolean => {
  */
 export function fail(e: unknown, status = 400) {
   if (e instanceof BadInput) return json({ error: e.message }, 400);
-  if (e instanceof TypeError || e instanceof ReferenceError || e instanceof RangeError || e instanceof SyntaxError || !(e instanceof Error)) {
+  if (e instanceof DbError || e instanceof TypeError || e instanceof ReferenceError || e instanceof RangeError || e instanceof SyntaxError || !(e instanceof Error)) {
     console.error(e);
-    return json({ error: "Something went wrong on our side. Please try again." }, 500);
+    return json({ error: GENERIC_ERROR }, 500);
   }
   return json({ error: e.message }, status);
+}
+
+/** Wraps a route handler so an unexpected failure (database down, Meta timeout…) is logged and answered with JSON 500. */
+export function safeRoute<A extends unknown[]>(handler: (...args: A) => Promise<Response>) {
+  return async (...args: A): Promise<Response> => {
+    try {
+      return await handler(...args);
+    } catch (e) {
+      console.error(e);
+      return json({ error: GENERIC_ERROR }, 500);
+    }
+  };
 }

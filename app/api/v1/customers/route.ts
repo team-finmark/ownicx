@@ -1,4 +1,4 @@
-import { BadInput, fail, json, optBool, optStr, phoneStr, readJson, reqStr, requireApiKey } from "@/lib/api";
+import { BadInput, fail, json, optBool, optStr, phoneStr, readJson, reqStr, requireApiKey, safeRoute } from "@/lib/api";
 import * as db from "@/lib/db";
 import { normalisePhone } from "@/lib/engine";
 import { onboardCustomer } from "@/lib/loyalty";
@@ -7,7 +7,7 @@ import type { Channel, Customer } from "@/lib/types";
 const CHANNELS: Channel[] = ["app", "whatsapp", "walk_in", "pos"];
 const GENDERS = ["female", "male", "other"];
 
-export async function GET(req: Request) {
+export const GET = safeRoute(async (req: Request) => {
   const denied = await requireApiKey(req);
   if (denied) return denied;
   const phone = new URL(req.url).searchParams.get("phone");
@@ -24,9 +24,9 @@ export async function GET(req: Request) {
     referral_code: c.referral_code,
     active_coupons: coupons.map(({ code, label, value, expires_at }) => ({ code, label, value, expires_at })),
   });
-}
+});
 
-export async function POST(req: Request) {
+export const POST = safeRoute(async (req: Request) => {
   const denied = await requireApiKey(req);
   if (denied) return denied;
   const b = await readJson(req);
@@ -61,4 +61,4 @@ export async function POST(req: Request) {
     // Duplicate phone / unknown referral code are conflicts; everything else is bad input.
     return fail(e, e instanceof Error && /already exists|Referral code/.test(e.message) ? 409 : 400);
   }
-}
+});

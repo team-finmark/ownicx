@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { startTransition } from "react";
+import { useTransition } from "react";
 import { ChevronDown, LogOut, MessageCircle, Settings, UserRound } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { signOut } from "@/app/auth-actions";
 import { Icon } from "./Icon";
+import { safely, showToast } from "./forms";
 import { FLAT_NAV, isActive, PAGE_TITLES, QUICK_ACTIONS } from "@/lib/nav";
 
 /** Sticky bar on every page: back, home, the everyday jobs, and the signed-in manager. */
@@ -22,6 +23,13 @@ export function Topbar({ manager }: { manager: string }) {
   const router = useRouter();
   const path = usePathname();
   const here = FLAT_NAV.find((n) => isActive(path, n.href));
+  const [signingOut, startSignOut] = useTransition();
+  const leave = () =>
+    startSignOut(async () => {
+      // On success the server redirects to /login; we only get a value back if the request failed.
+      const r = await safely(() => signOut());
+      if (r) showToast(r);
+    });
 
   return (
     <div className="topbar">
@@ -68,8 +76,8 @@ export function Topbar({ manager }: { manager: string }) {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="py-2.5 text-[15px]" onSelect={() => startTransition(() => signOut())}>
-              <LogOut className="mr-2 size-4" /> Sign out
+            <DropdownMenuItem className="py-2.5 text-[15px]" disabled={signingOut} onSelect={leave}>
+              <LogOut className="mr-2 size-4" /> {signingOut ? "Signing out…" : "Sign out"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { CalendarClock, MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
 import type { ActionState } from "@/app/actions";
 import { removeMemberAction, setCouponExpiryAction, updateMemberAction } from "@/app/actions";
-import { ActionForm, Submit, showToast } from "./forms";
+import { ActionForm, Submit, safely, showToast } from "./forms";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -117,7 +117,7 @@ export function MemberActions({ member, coupons }: { member: EditableMember; cou
   const remove = () => {
     if (!window.confirm(`Remove ${member.name} permanently?\n\nTheir visits, points, coupons and messages are deleted. This can't be undone.`)) return;
     start(async () => {
-      const r = await removeMemberAction(member.id);
+      const r = await safely(() => removeMemberAction(member.id));
       showToast(r);
       if (r?.ok) setOpen(null);
     });

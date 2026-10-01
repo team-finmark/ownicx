@@ -1,8 +1,8 @@
-import { fail, json, readJson, reqStr, requireApiKey } from "@/lib/api";
+import { fail, json, readJson, reqStr, requireApiKey, safeRoute } from "@/lib/api";
 import { redeemCouponByCode } from "@/lib/loyalty";
 
 // Body: { "code": "OWNK7QX2P", "bill": 2800 }  — bill is required for %-off coupons.
-export async function POST(req: Request) {
+export const POST = safeRoute(async (req: Request) => {
   const denied = await requireApiKey(req);
   if (denied) return denied;
   const b = await readJson(req);
@@ -13,4 +13,4 @@ export async function POST(req: Request) {
   } catch (e) {
     return fail(e, e instanceof Error && /^No coupon/.test(e.message) ? 404 : e instanceof Error && /bill amount/.test(e.message) ? 400 : 409);
   }
-}
+});

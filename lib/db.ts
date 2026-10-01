@@ -2,6 +2,7 @@ import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { connection } from "next/server";
 import { cache } from "react";
+import { DbError } from "./errors";
 import { hashPasswordSync } from "./password";
 import { buildSeed, type Db } from "./seed";
 import type { TableName, Tables } from "./types";
@@ -43,7 +44,7 @@ export async function list<T extends TableName>(table: T): Promise<Tables[T][]> 
   const out: Tables[T][] = [];
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await sb.from(table).select("*").order("id").range(from, from + PAGE - 1);
-    if (error) throw new Error(`${table}: ${error.message}`);
+    if (error) throw new DbError(`${table}: ${error.message}`);
     out.push(...(data as Tables[T][]));
     if (!data || data.length < PAGE) break;
   }
@@ -99,7 +100,7 @@ export async function query<T extends TableName>(table: T, q: Query = {}): Promi
     r = r.order(q.order?.column ?? "id", { ascending: q.order?.ascending ?? true });
     const size = q.limit ? Math.min(PAGE, q.limit - out.length) : PAGE;
     const { data, error } = await r.range(from, from + size - 1);
-    if (error) throw new Error(`${table}: ${error.message}`);
+    if (error) throw new DbError(`${table}: ${error.message}`);
     out.push(...(data as Tables[T][]));
     if (!data || data.length < size || (q.limit && out.length >= q.limit)) break;
   }
@@ -117,7 +118,7 @@ export async function count(table: TableName, q: Pick<Query, "eq" | "in" | "gte"
   for (const [k, v] of Object.entries(q.lte ?? {})) r = r.lte(k, v as never);
   for (const [k, v] of Object.entries(q.not ?? {})) r = v === null ? r.not(k, "is", null) : r.neq(k, v as never);
   const { count: n, error } = await r;
-  if (error) throw new Error(`${table}: ${error.message}`);
+  if (error) throw new DbError(`${table}: ${error.message}`);
   return n ?? 0;
 }
 
@@ -136,7 +137,7 @@ export async function get<T extends TableName>(table: T, id: string): Promise<Ta
     return row ? structuredClone(row) : null;
   }
   const { data, error } = await sb.from(table).select("*").eq("id", id).maybeSingle();
-  if (error) throw new Error(`${table}: ${error.message}`);
+  if (error) throw new DbError(`${table}: ${error.message}`);
   return data as Tables[T] | null;
 }
 
@@ -149,7 +150,7 @@ export async function insert<T extends TableName>(table: T, rows: Tables[T] | Ta
     return;
   }
   const { error } = await sb.from(table).insert(arr as never);
-  if (error) throw new Error(`${table}: ${error.message}`);
+  if (error) throw new DbError(`${table}: ${error.message}`);
 }
 
 export async function update<T extends TableName>(table: T, id: string, patch: Partial<Tables[T]>): Promise<void> {
@@ -161,7 +162,7 @@ export async function update<T extends TableName>(table: T, id: string, patch: P
     return;
   }
   const { error } = await sb.from(table).update(patch as never).eq("id", id);
-  if (error) throw new Error(`${table}: ${error.message}`);
+  if (error) throw new DbError(`${table}: ${error.message}`);
 }
 
 /**
@@ -180,7 +181,7 @@ export async function updateIf<T extends TableName>(table: T, id: string, expect
   let q = sb.from(table).update(patch as never).eq("id", id);
   for (const [k, v] of Object.entries(expected)) if (v !== undefined) q = v === null ? q.is(k, null) : q.eq(k, v as never);
   const { data, error } = await q.select("id");
-  if (error) throw new Error(`${table}: ${error.message}`);
+  if (error) throw new DbError(`${table}: ${error.message}`);
   return (data?.length ?? 0) > 0;
 }
 
@@ -193,13 +194,13 @@ export async function remove(table: TableName, id: string): Promise<void> {
     return;
   }
   const { error } = await sb.from(table).delete().eq("id", id);
-  if (error) throw new Error(`${table}: ${error.message}`);
+  if (error) throw new DbError(`${table}: ${error.message}`);
 }
 
 /** Salon settings. Memoised per page render, so the layout and the page share one fetch. */
 export const getSettings = cache(async () => {
   const rows = await list("settings");
-  if (!rows[0]) throw new Error("settings row missing — run supabase/seed.sql");
+  if (!rows[0]) throw new DbError("settings row missing — run supabase/seed.sql");
   return rows[0];
 });
 

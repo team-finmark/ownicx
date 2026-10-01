@@ -6,6 +6,7 @@ import type { ActionState } from "./actions";
 import { requireManager } from "@/lib/auth";
 import * as db from "@/lib/db";
 import { normalisePhone } from "@/lib/engine";
+import { userMessage } from "@/lib/errors";
 import { seal } from "@/lib/secret-box";
 import {
   cloudCreds,
@@ -31,7 +32,7 @@ async function attempt(fn: () => Promise<string>): Promise<ActionState> {
     return { ok: true, message };
   } catch (e) {
     refresh();
-    return { ok: false, message: e instanceof Error ? e.message : "Something went wrong" };
+    return { ok: false, message: userMessage(e) };
   }
 }
 
@@ -53,18 +54,22 @@ export async function saveNumber(_: ActionState, f: FormData): Promise<ActionSta
 }
 
 /** Step 1b (tap-to-send): manager confirms the number opens the salon's WhatsApp. */
-export async function confirmNumber(): Promise<void> {
-  await requireManager();
-  const conn = await getConnection();
-  if (conn.phone) await saveConnection({ phone_confirmed: true });
-  refresh();
+export async function confirmNumber(): Promise<ActionState> {
+  return attempt(async () => {
+    const conn = await getConnection();
+    if (!conn.phone) throw new Error("Save the number first");
+    await saveConnection({ phone_confirmed: true });
+    return "Number confirmed";
+  });
 }
 
 /** Step 2: sending mode. Automatic only takes effect once the number is connected (step 3). */
-export async function setMode(mode: "click_to_chat" | "cloud_api"): Promise<void> {
-  await requireManager();
-  await saveConnection({ mode });
-  refresh();
+export async function setMode(mode: "click_to_chat" | "cloud_api"): Promise<ActionState> {
+  return attempt(async () => {
+    if (mode !== "click_to_chat" && mode !== "cloud_api") throw new Error("Unknown sending mode");
+    await saveConnection({ mode });
+    return mode === "cloud_api" ? "Automatic sending selected — finish step 3 to connect" : "Tap-to-send selected";
+  });
 }
 
 /** Verifies credentials against Meta and checks the Meta number is the salon's number. */
@@ -162,49 +167,52 @@ export async function sendTest(_: ActionState, f: FormData): Promise<ActionState
   });
 }
 
-export async function regenerateVerifyToken(): Promise<void> {
-  await requireManager();
-  await saveConnection({ webhook_verify_token: newVerifyToken() });
-  refresh();
+export async function regenerateVerifyToken(): Promise<ActionState> {
+  return attempt(async () => {
+    await saveConnection({ webhook_verify_token: newVerifyToken() });
+    return "New verify token made — paste it into Meta";
+  });
 }
 
 /** Back to free tap-to-send; stored credentials are deleted. */
-export async function disconnect(): Promise<void> {
-  await requireManager();
-  await saveConnection({
-    mode: "click_to_chat",
-    status: "not_connected",
-    connected_via: null,
-    phone_number_id: null,
-    waba_id: null,
-    access_token_enc: null,
-    app_secret_enc: null,
-    verified_name: null,
-    display_phone: null,
-    last_error: null,
-    connected_at: null,
+export async function disconnect(): Promise<ActionState> {
+  return attempt(async () => {
+    await saveConnection({
+      mode: "click_to_chat",
+      status: "not_connected",
+      connected_via: null,
+      phone_number_id: null,
+      waba_id: null,
+      access_token_enc: null,
+      app_secret_enc: null,
+      verified_name: null,
+      display_phone: null,
+      last_error: null,
+      connected_at: null,
+    });
+    return "Disconnected — back to tap-to-send";
   });
-  refresh();
 }
 
 /** Forgets the salon's number. Automatic sending is tied to the number, so it is disconnected too. */
-export async function removeNumber(): Promise<void> {
-  await requireManager();
-  await saveConnection({
-    phone: "",
-    phone_confirmed: false,
-    mode: "click_to_chat",
-    status: "not_connected",
-    connected_via: null,
-    phone_number_id: null,
-    waba_id: null,
-    access_token_enc: null,
-    app_secret_enc: null,
-    verified_name: null,
-    display_phone: null,
-    last_error: null,
-    connected_at: null,
+export async function removeNumber(): Promise<ActionState> {
+  return attempt(async () => {
+    await saveConnection({
+      phone: "",
+      phone_confirmed: false,
+      mode: "click_to_chat",
+      status: "not_connected",
+      connected_via: null,
+      phone_number_id: null,
+      waba_id: null,
+      access_token_enc: null,
+      app_secret_enc: null,
+      verified_name: null,
+      display_phone: null,
+      last_error: null,
+      connected_at: null,
+    });
+    await db.update("settings", "default", { whatsapp_number: "" });
+    return "Number removed";
   });
-  await db.update("settings", "default", { whatsapp_number: "" });
-  refresh();
 }

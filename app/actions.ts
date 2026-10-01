@@ -9,6 +9,7 @@ import { couponCode, DAY, formatDate, renderTemplate, tierFor } from "@/lib/engi
 import { issueRewardCoupon, onboardCustomer, recordVisit, redeemCouponByCode, removeMember, setCouponExpiry, updateMember } from "@/lib/loyalty";
 import { runAutomations } from "@/lib/runner";
 import { dispatchQueued } from "@/lib/dispatch";
+import { userMessage } from "@/lib/errors";
 import { cloudCreds, fillTemplate, getConnection } from "@/lib/whatsapp";
 import type { AutomationRule, Campaign, Channel, Customer, Reward, RuleType, WaTemplate } from "@/lib/types";
 
@@ -27,7 +28,7 @@ async function attempt(fn: () => Promise<string>): Promise<ActionState> {
     refresh();
     return { ok: true, message };
   } catch (e) {
-    return { ok: false, message: e instanceof Error ? e.message : "Something went wrong" };
+    return { ok: false, message: userMessage(e) };
   }
 }
 
@@ -74,10 +75,12 @@ export async function saveRule(_: ActionState, f: FormData): Promise<ActionState
   });
 }
 
-export async function toggleRule(id: string, enabled: boolean) {
+export async function toggleRule(id: string, enabled: boolean): Promise<ActionState> {
   await requireManager();
-  await db.update("automation_rules", id, { enabled });
-  refresh();
+  return attempt(async () => {
+    await db.update("automation_rules", id, { enabled });
+    return enabled ? "Rule switched on" : "Rule paused";
+  });
 }
 
 export async function createRule(_: ActionState, f: FormData): Promise<ActionState> {
@@ -97,16 +100,20 @@ export async function createRule(_: ActionState, f: FormData): Promise<ActionSta
   });
 }
 
-export async function deleteRule(id: string) {
+export async function deleteRule(id: string): Promise<ActionState> {
   await requireManager();
-  await db.remove("automation_rules", id);
-  refresh();
+  return attempt(async () => {
+    await db.remove("automation_rules", id);
+    return "Rule deleted";
+  });
 }
 
-export async function markMessage(id: string, status: "sent" | "skipped") {
+export async function markMessage(id: string, status: "sent" | "skipped"): Promise<ActionState> {
   await requireManager();
-  await db.update("messages", id, { status, sent_at: status === "sent" ? new Date().toISOString() : null });
-  refresh();
+  return attempt(async () => {
+    await db.update("messages", id, { status, sent_at: status === "sent" ? new Date().toISOString() : null });
+    return status === "sent" ? "Marked as sent" : "Message skipped";
+  });
 }
 
 // ---------- Members ----------
@@ -205,10 +212,12 @@ export async function createReward(_: ActionState, f: FormData): Promise<ActionS
   });
 }
 
-export async function toggleReward(id: string, active: boolean) {
+export async function toggleReward(id: string, active: boolean): Promise<ActionState> {
   await requireManager();
-  await db.update("rewards", id, { active });
-  refresh();
+  return attempt(async () => {
+    await db.update("rewards", id, { active });
+    return active ? "Reward is live in the catalogue" : "Reward switched off";
+  });
 }
 
 export async function generateCoupons(_: ActionState, f: FormData): Promise<ActionState> {

@@ -1,8 +1,24 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import type { ActionState } from "@/app/actions";
+
+/** Redirects (e.g. "session expired → /login") and not-found are Next.js control flow, not failures. */
+export const isNextSignal = (e: unknown) => typeof (e as { digest?: unknown } | null)?.digest === "string" && (e as { digest: string }).digest.startsWith("NEXT_");
+
+export const OFFLINE: NonNullable<ActionState> = { ok: false, message: "Couldn't reach the server. Check your internet connection and try again." };
+
+/** Runs a server action; a dropped connection or crash becomes an error toast instead of a frozen screen. */
+export async function safely<T>(fn: () => Promise<T>): Promise<T | NonNullable<ActionState>> {
+  try {
+    return await fn();
+  } catch (e) {
+    if (isNextSignal(e)) throw e;
+    console.error(e);
+    return OFFLINE;
+  }
+}
 
 export function Toast({ state }: { state: ActionState }) {
   const [visible, setVisible] = useState(false);
@@ -53,7 +69,8 @@ export function ActionForm({
   resetOnSuccess?: boolean;
   onSuccess?: () => void;
 }) {
-  const [state, formAction] = useActionState(action, null);
+  const guarded = useCallback((s: ActionState, f: FormData) => safely(() => action(s, f)), [action]);
+  const [state, formAction] = useActionState(guarded, null);
   const ref = useRef<HTMLFormElement>(null);
   const onSuccessRef = useRef(onSuccess);
   onSuccessRef.current = onSuccess;
@@ -92,7 +109,7 @@ export function LiveSwitch({
   confirmOn,
 }: {
   checked: boolean;
-  onToggle: (v: boolean) => Promise<void>;
+  onToggle: (v: boolean) => Promise<ActionState | void>;
   label: string;
   /** Asked before switching ON; cancelling leaves it off. */
   confirmOn?: string;
@@ -110,7 +127,14 @@ export function LiveSwitch({
           const v = e.target.checked;
           if (v && confirmOn && !window.confirm(confirmOn)) return;
           setOn(v);
-          start(() => onToggle(v));
+          start(async () => {
+            const r = await safely(() => onToggle(v));
+            // Didn't save: put the switch back so it shows what's really stored.
+            if (r && !r.ok) {
+              setOn(!v);
+              showToast(r);
+            }
+          });
         }}
       />
       <span />
@@ -141,12 +165,8 @@ export function ActionButton({
         onClick={() => {
           if (confirm && !window.confirm(confirm)) return;
           start(async () => {
-            try {
-              const r = await action();
-              if (r) showToast(r);
-            } catch {
-              showToast({ ok: false, message: "That didn't work. Please try again." });
-            }
+            const r = await safely(action);
+            if (r) showToast(r);
           });
         }}
       >

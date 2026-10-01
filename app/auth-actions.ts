@@ -4,6 +4,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { LIMITS, loginFailed, loginLocked, loginSucceeded, requireManager } from "@/lib/auth";
 import * as db from "@/lib/db";
+import { userMessage } from "@/lib/errors";
 import { gateFail, gateStatus } from "@/lib/gate";
 import { hashPassword, passwordFingerprint, passwordProblem, verifyPassword } from "@/lib/password";
 import { SESSION_COOKIE, SESSION_TTL_S, sessionSecretMissing, signSession } from "@/lib/session";
@@ -38,14 +39,20 @@ export async function signIn(_: ActionState, f: FormData): Promise<ActionState> 
   const ip = (h.get("x-forwarded-for")?.split(",")[0] ?? h.get("x-real-ip") ?? "unknown").trim().slice(0, 64);
   // Two locks: per manager name (any IP — faking addresses doesn't help) and the escalating per-IP login gate.
   const nameKey = `name:${name.toLowerCase()}`;
-  const ipGate = await gateStatus("login", ip);
-  if (ipGate.locked || (await loginLocked(nameKey, LIMITS.name))) return { ok: false, message: "Too many attempts. Try again later." };
+  try {
+    const ipGate = await gateStatus("login", ip);
+    if (ipGate.locked || (await loginLocked(nameKey, LIMITS.name))) return { ok: false, message: "Too many attempts. Try again later." };
+  } catch (e) {
+    console.error(e);
+    return { ok: false, message: "Can't reach the database right now. Please try again in a moment." };
+  }
 
   let manager;
   try {
     manager = (await db.list("managers")).find((m) => m.name.toLowerCase() === name.toLowerCase());
-  } catch {
-    return { ok: false, message: "Can't reach the database. Has supabase/schema.sql been run (managers table)?" };
+  } catch (e) {
+    console.error(e);
+    return { ok: false, message: "Can't reach the database right now. Please try again in a moment." };
   }
   const ok = await verifyPassword(password, manager?.password_hash ?? (await dummy()));
   if (!manager || !ok) {
@@ -61,7 +68,15 @@ export async function signIn(_: ActionState, f: FormData): Promise<ActionState> 
 }
 
 export async function signOut() {
-  (await cookies()).delete(SESSION_COOKIE);
+  // Browsers ignore a __Host- cookie update that isn't Secure + Path=/, so a bare delete() left
+  // managers signed in on the live site. Overwrite it with the original attributes and expire it.
+  (await cookies()).set(SESSION_COOKIE, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+    maxAge: 0,
+  });
   redirect("/login");
 }
 
@@ -70,14 +85,18 @@ export async function changePassword(_: ActionState, f: FormData): Promise<Actio
   const current = String(f.get("current") ?? "");
   const next = String(f.get("next") ?? "");
   const confirm = String(f.get("confirm") ?? "");
-  const row = await db.get("managers", me.id);
-  if (!row || !(await verifyPassword(current, row.password_hash))) return { ok: false, message: "Current password is incorrect" };
-  if (next !== confirm) return { ok: false, message: "New passwords don't match" };
-  const problem = passwordProblem(next);
-  if (problem) return { ok: false, message: problem };
-  const hash = await hashPassword(next);
-  await db.update("managers", me.id, { password_hash: hash });
-  // Every other device is now signed out (their sessions carry the old fingerprint); keep this one.
-  await setSessionCookie(me.id, me.name, hash);
+  try {
+    const row = await db.get("managers", me.id);
+    if (!row || !(await verifyPassword(current, row.password_hash))) return { ok: false, message: "Current password is incorrect" };
+    if (next !== confirm) return { ok: false, message: "New passwords don't match" };
+    const problem = passwordProblem(next);
+    if (problem) return { ok: false, message: problem };
+    const hash = await hashPassword(next);
+    await db.update("managers", me.id, { password_hash: hash });
+    await setSessionCookie(me.id, me.name, hash);
+  } catch (e) {
+    return { ok: false, message: userMessage(e) };
+  }
+  // Every other device is now signed out (their sessions carry the old fingerprint); this one got a fresh cookie above.
   return { ok: true, message: "Password changed. Other devices have been signed out." };
 }

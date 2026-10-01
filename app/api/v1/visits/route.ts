@@ -1,9 +1,9 @@
-import { BadInput, fail, json, optStr, phoneStr, readJson, reqStr, requireApiKey } from "@/lib/api";
+import { BadInput, fail, json, optStr, phoneStr, readJson, reqStr, requireApiKey, safeRoute } from "@/lib/api";
 import * as db from "@/lib/db";
 import { normalisePhone } from "@/lib/engine";
 import { recordVisit } from "@/lib/loyalty";
 
-export async function POST(req: Request) {
+export const POST = safeRoute(async (req: Request) => {
   const denied = await requireApiKey(req);
   if (denied) return denied;
   const b = await readJson(req);
@@ -24,4 +24,4 @@ export async function POST(req: Request) {
   } catch (e) {
     return fail(e, e instanceof Error && /not found/i.test(e.message) ? 404 : e instanceof Error && /another till/.test(e.message) ? 409 : 400);
   }
-}
+});

@@ -1,5 +1,5 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
-import { json } from "@/lib/api";
+import { json, safeRoute } from "@/lib/api";
 import * as db from "@/lib/db";
 import { clientIp, gateFail, gateStatus, lockedResponse } from "@/lib/gate";
 import { onboardCustomer } from "@/lib/loyalty";
@@ -13,7 +13,7 @@ import { cloudCreds, getConnection, sendViaCloudApi, webhookAppSecret } from "@/
 const sameSecret = (a: string, b: string) => timingSafeEqual(createHash("sha256").update(a).digest(), createHash("sha256").update(b).digest());
 const MAX_WEBHOOK_BYTES = 256 * 1024;
 
-export async function GET(req: Request) {
+export const GET = safeRoute(async (req: Request) => {
   const ip = clientIp(req);
   const status = await gateStatus("webhook", ip);
   if (status.locked) return lockedResponse(status);
@@ -28,7 +28,7 @@ export async function GET(req: Request) {
   }
   await gateFail("webhook", ip);
   return new Response("Forbidden", { status: 403 });
-}
+});
 
 interface Inbound {
   entry?: { changes?: { value?: { contacts?: { profile?: { name?: string }; wa_id?: string }[]; messages?: { id?: string; from: string; type: string; text?: { body: string } }[] } }[] }[];
@@ -42,7 +42,7 @@ function validSignature(raw: string, header: string | null, secret: string | nul
   return expected.length === got.length && timingSafeEqual(expected, got);
 }
 
-export async function POST(req: Request) {
+export const POST = safeRoute(async (req: Request) => {
   const ip = clientIp(req);
   const status = await gateStatus("webhook", ip);
   if (status.locked) return lockedResponse(status);
@@ -133,4 +133,4 @@ export async function POST(req: Request) {
     }
   }
   return json({ ok: true });
-}
+});
