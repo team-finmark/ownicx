@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, KeyRound, MessageCircle, Plug, Shield, SlidersHorizontal } from "lucide-react";
+import { ChevronRight, FlaskConical, KeyRound, MessageCircle, Plug, Receipt, Shield, SlidersHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemSeparator, ItemTitle } from "@/components/ui/item";
@@ -25,6 +25,8 @@ export default async function Settings() {
     { href: "/settings/whatsapp", icon: MessageCircle, title: "WhatsApp", description: wa.phone ? `+${wa.phone} · connect your number and choose how messages are sent` : "Connect your salon's WhatsApp number", badge: waBadge },
     { href: "/program", icon: SlidersHorizontal, title: "Salon profile & guardrails", description: "Salon name, booking link, margin goal and reward budget" },
     { href: "/account", icon: KeyRound, title: "My account", description: "Change your sign-in password" },
+    { href: "/experiments", icon: FlaskConical, title: "P&L and A/B tests", description: "Loyalty cost vs margin goal, and offer experiments" },
+    { href: "/compliance", icon: Receipt, title: "194R & TDS", description: "Benefit ledger for business members and the 26Q export" },
     { href: "/integrations", icon: Plug, title: "API & integrations", description: "Connect your POS, CRM or website" },
     { href: "/security", icon: Shield, title: "Security", description: "Controls and certification status" },
   ];

@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { signOut } from "@/app/auth-actions";
 import { Icon } from "./Icon";
-import { FLAT_NAV, isActive, QUICK_ACTIONS } from "@/lib/nav";
+import { FLAT_NAV, isActive, PAGE_TITLES, QUICK_ACTIONS } from "@/lib/nav";
 
 /** Sticky bar on every page: back, home, the everyday jobs, and the signed-in manager. */
 export function Topbar({ manager }: { manager: string }) {
@@ -34,7 +34,7 @@ export function Topbar({ manager }: { manager: string }) {
             <Icon name="home" /> Home
           </Link>
         )}
-        <span className="topbar-here">{here?.label ?? (path === "/account" ? "My account" : "")}</span>
+        <span className="topbar-here">{here?.label ?? PAGE_TITLES[path] ?? ""}</span>
         <div className="topbar-spacer" />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

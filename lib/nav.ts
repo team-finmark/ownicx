@@ -63,16 +63,21 @@ export const NAV: { label: string; items: NavItem[] }[] = [
     label: "Growth & control",
     items: [
       { href: "/program", label: "Program design", icon: "map" },
-      { href: "/experiments", label: "P&L and A/B tests", icon: "flask" },
-      { href: "/compliance", label: "194R & TDS", icon: "receipt" },
-      { href: "/integrations", label: "API & integrations", icon: "plug" },
-      { href: "/security", label: "Security", icon: "shield" },
       { href: "/settings", label: "Settings", icon: "sliders" },
     ],
   },
 ];
 
 export const FLAT_NAV: NavItem[] = NAV.flatMap((g) => g.items);
+
+/** Pages kept out of the sidebar (reached from Settings) — still named in the top bar. */
+export const PAGE_TITLES: Record<string, string> = {
+  "/account": "My account",
+  "/experiments": "P&L and A/B tests",
+  "/compliance": "194R & TDS",
+  "/integrations": "API & integrations",
+  "/security": "Security",
+};
 
 /** The everyday front-desk jobs, one tap away on every page. */
 export const QUICK_ACTIONS: NavItem[] = [
