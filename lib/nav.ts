@@ -22,6 +22,7 @@ export const ICONS = {
   scissors: "M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12",
   user: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
   logout: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9",
+  phone: "M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM11 18h2",
   sliders: "M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6",
 } as const;
 
@@ -48,6 +49,7 @@ export const NAV: { label: string; items: NavItem[] }[] = [
     items: [
       { href: "/automations", label: "Automations", icon: "bolt" },
       { href: "/outbox", label: "Outbox", icon: "send" },
+      { href: "/simulator", label: "Simulator", icon: "phone" },
     ],
   },
   {

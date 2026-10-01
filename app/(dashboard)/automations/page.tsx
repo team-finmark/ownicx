@@ -110,7 +110,7 @@ export default async function AutomationsPage() {
             <div className="text-2" style={{ fontSize: 13 }}>
               <b style={{ color: "var(--text)" }}>Consent:</b> only members who opted in to WhatsApp are messaged.
             </div>
-            <Link className="btn" href="/settings/whatsapp">WhatsApp settings</Link>
+            <div className="row wrap"><Link className="btn" href="/settings/whatsapp">WhatsApp settings</Link><Link className="btn" href="/simulator">Try the simulator</Link></div>
           </div>
         </Card>
       </div>

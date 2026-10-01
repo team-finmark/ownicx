@@ -1,0 +1,90 @@
+/* ---------- WhatsApp simulator (/simulator) ---------- */
+.sim-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr); gap: 28px; align-items: start; }
+@media (max-width: 1100px) { .sim-grid { grid-template-columns: minmax(0, 1fr); } }
+
+.sim-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.sim-step { position: relative; display: flex; gap: 14px; padding: 0 0 18px; }
+.sim-step:not(:last-child)::before { content: ""; position: absolute; left: 17px; top: 36px; bottom: 0; width: 2px; background: var(--border); }
+.sim-step.is-done:not(:last-child)::before { background: #25d366; }
+.sim-step-dot { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; border: 2px solid var(--border-strong); background: var(--card); color: var(--text-3); transition: all .3s; }
+.sim-step.is-active .sim-step-dot { border-color: #25d366; color: #128c7e; box-shadow: 0 0 0 6px rgb(37 211 102 / .15); animation: sim-pulse 1s ease-in-out infinite; }
+.sim-step.is-done .sim-step-dot { background: #25d366; border-color: #25d366; color: #fff; }
+.sim-step.is-blocked .sim-step-dot { background: var(--bad); border-color: var(--bad); color: #fff; }
+.sim-step-body { flex: 1; min-width: 0; padding-top: 6px; }
+.sim-step-title { font-weight: 650; }
+.sim-step.is-todo .sim-step-title { color: var(--text-3); }
+.sim-step-text { margin-top: 4px; font-size: 14px; color: var(--text-2); animation: sim-fade .35s ease both; }
+.sim-template { margin-top: 10px; padding: 12px 14px; border-radius: var(--r); background: var(--subtle); border: 1px solid var(--border); font-size: 14.5px; line-height: 1.9; }
+.sim-var { position: relative; display: inline-grid; vertical-align: baseline; margin: 0 2px; }
+.sim-var > span { grid-area: 1 / 1; padding: 1px 7px; border-radius: 6px; transition: opacity .35s, transform .35s; white-space: nowrap; }
+.sim-var-name { background: #fff4d6; color: #8a5a00; font-family: var(--font-mono); font-size: 12.5px; }
+.sim-var-value { background: #dcf8c6; color: #0b5e3a; font-weight: 600; opacity: 0; transform: translateY(6px); }
+.sim-var.is-filled .sim-var-name { opacity: 0; transform: translateY(-6px); }
+.sim-var.is-filled .sim-var-value { opacity: 1; transform: none; }
+
+.sim-stage { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.sim-phone { position: relative; width: 300px; height: 610px; border-radius: 46px; background: #0b0b0c; padding: 12px; box-shadow: 0 0 0 2px #2a2a2c, 0 30px 60px -20px rgb(0 0 0 / .45); overflow: hidden; }
+.sim-phone::after { content: ""; position: absolute; inset: 12px; border-radius: 36px; pointer-events: none; box-shadow: inset 0 0 0 1px rgb(255 255 255 / .06); }
+.sim-island { position: absolute; z-index: 5; top: 20px; left: 50%; width: 92px; height: 26px; margin-left: -46px; border-radius: 20px; background: #000; }
+.sim-status { position: absolute; z-index: 4; top: 20px; left: 34px; right: 30px; display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 600; color: #fff; }
+.sim-status-icons { letter-spacing: 1px; font-size: 10px; }
+.sim-lock { position: absolute; inset: 12px; border-radius: 36px; padding: 70px 14px 20px; text-align: center; color: #fff; background: radial-gradient(120% 80% at 30% 10%, #3a5a8c 0%, #1b2440 45%, #0e1222 100%); transition: opacity .45s, transform .45s, filter .45s; }
+.sim-phone:not(.is-awake) .sim-lock { filter: brightness(.55); }
+.sim-lock.is-hidden { opacity: 0; transform: scale(1.04); pointer-events: none; }
+.sim-lock-time { font-family: var(--font-rounded); font-size: 64px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
+.sim-lock-date { margin-top: 6px; font-size: 14px; opacity: .85; }
+.sim-notif { margin-top: 28px; padding: 10px 12px; border-radius: 18px; text-align: left; background: rgb(255 255 255 / .85); color: #111; box-shadow: 0 10px 30px rgb(0 0 0 / .25); animation: sim-drop .55s cubic-bezier(.2,.9,.3,1.3) both; display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.sim-notif.is-blocked { background: rgb(255 235 235 / .92); color: var(--bad); text-align: center; }
+.sim-notif-app { font-size: 11px; color: #555; display: flex; align-items: center; gap: 6px; }
+.sim-wa-dot { width: 16px; height: 16px; border-radius: 5px; background: #25d366; color: #fff; display: inline-grid; place-items: center; font-size: 10px; }
+.sim-notif-text { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; color: #333; }
+
+.sim-chat { position: absolute; inset: 12px; border-radius: 36px; overflow: hidden; display: flex; flex-direction: column; background: #efeae2; opacity: 0; transform: translateY(24px); transition: opacity .45s, transform .45s; }
+.sim-chat.is-open { opacity: 1; transform: none; }
+.sim-chat-head { display: flex; align-items: center; gap: 10px; padding: 52px 14px 10px; background: #008069; color: #fff; }
+.sim-chat-head b { display: block; font-size: 15px; line-height: 1.2; }
+.sim-chat-head span { font-size: 12px; opacity: .85; }
+.sim-chat-back { font-size: 26px; line-height: 1; margin-right: -4px; }
+.sim-chat-avatar { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: #fff; color: #008069; font-weight: 700; }
+.sim-chat-body { flex: 1; padding: 12px 10px; display: flex; flex-direction: column; gap: 8px; overflow: hidden; background-image: radial-gradient(rgb(0 0 0 / .045) 1px, transparent 1px); background-size: 14px 14px; }
+.sim-day { align-self: center; font-size: 11px; padding: 3px 10px; border-radius: 8px; background: #fff; color: #667; box-shadow: 0 1px 1px rgb(0 0 0 / .06); }
+.sim-bubble { position: relative; max-width: 86%; padding: 7px 10px 18px; border-radius: 10px; font-size: 13.5px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; box-shadow: 0 1px 1px rgb(0 0 0 / .08); animation: sim-pop .45s cubic-bezier(.2,.9,.3,1.4) both; }
+.sim-bubble.in { align-self: flex-start; background: #fff; border-top-left-radius: 2px; }
+.sim-bubble.out { align-self: flex-end; background: #d9fdd3; border-top-right-radius: 2px; }
+.sim-bubble-time { position: absolute; right: 8px; bottom: 3px; font-size: 10.5px; color: #667; display: inline-flex; align-items: center; gap: 2px; }
+.sim-typing { align-self: flex-end; display: flex; gap: 4px; padding: 10px 12px; border-radius: 10px; background: #d9fdd3; animation: sim-pop .3s ease both; }
+.sim-typing i { width: 7px; height: 7px; border-radius: 50%; background: #5f7f6a; animation: sim-dot 1s infinite; }
+.sim-typing i:nth-child(2) { animation-delay: .15s; }
+.sim-typing i:nth-child(3) { animation-delay: .3s; }
+.sim-chat-input { margin: 8px 10px 14px; padding: 9px 14px; border-radius: 20px; background: #fff; color: #8a8f94; font-size: 13px; }
+
+.sim-reaction { display: flex; align-items: center; gap: 14px; padding: 12px 18px 12px 12px; border-radius: 999px; background: var(--card); border: 1px solid var(--border); box-shadow: var(--shadow); opacity: 0; transform: translateY(10px) scale(.96); transition: opacity .4s, transform .4s; }
+.sim-reaction.is-visible { opacity: 1; transform: none; }
+.sim-reaction p { display: flex; flex-direction: column; font-size: 14px; }
+.sim-reaction span { color: var(--text-2); }
+.sim-face { position: relative; width: 96px; height: 96px; }
+.sim-face svg * { transition: opacity .35s ease, transform .35s ease; transform-box: fill-box; transform-origin: center; }
+.sim-face .eyes-happy, .sim-face .cheeks, .sim-face .mouth-smile { opacity: 0; }
+.sim-face .mouth-smile { transform: scaleY(.3); }
+.sim-face.is-happy svg { animation: sim-bounce .7s cubic-bezier(.2,.9,.3,1.5) both; }
+.sim-face.is-happy .eyes-open, .sim-face.is-happy .mouth-flat { opacity: 0; }
+.sim-face.is-happy .eyes-happy, .sim-face.is-happy .cheeks { opacity: 1; }
+.sim-face.is-happy .mouth-smile { opacity: 1; transform: none; }
+.sim-heart { position: absolute; left: 50%; top: 40%; font-size: 18px; opacity: 0; pointer-events: none; }
+.sim-face.is-happy .sim-heart { animation: sim-float 1.8s ease-out both; }
+.sim-face.is-happy .h1 { --dx: -46px; animation-delay: .15s; }
+.sim-face.is-happy .h2 { --dx: 40px; animation-delay: .35s; }
+.sim-face.is-happy .h3 { --dx: -20px; animation-delay: .55s; }
+.sim-face.is-happy .h4 { --dx: 24px; animation-delay: .75s; }
+.sim-done { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #128c7e; animation: sim-fade .4s ease both; }
+
+@keyframes sim-pulse { 50% { box-shadow: 0 0 0 10px rgb(37 211 102 / .08); } }
+@keyframes sim-fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes sim-drop { from { opacity: 0; transform: translateY(-40px) scale(.95); } to { opacity: 1; transform: none; } }
+@keyframes sim-pop { from { opacity: 0; transform: translateY(10px) scale(.92); } to { opacity: 1; transform: none; } }
+@keyframes sim-dot { 0%, 60%, 100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
+@keyframes sim-bounce { 0% { transform: scale(1); } 40% { transform: scale(1.14) rotate(-4deg); } 70% { transform: scale(.97) rotate(2deg); } 100% { transform: scale(1); } }
+@keyframes sim-float { 0% { opacity: 0; transform: translate(-50%, 0) scale(.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), -90px) scale(1.15); } }
+@media (prefers-reduced-motion: reduce) {
+  .sim-notif, .sim-bubble, .sim-typing, .sim-step-text, .sim-done, .sim-face.is-happy svg, .sim-face.is-happy .sim-heart, .sim-step.is-active .sim-step-dot { animation: none !important; }
+}
