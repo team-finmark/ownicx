@@ -98,7 +98,7 @@ export default async function Program() {
 
         <Card title="Your loyalty partner · Osiq Solutions" sub="Managed program, run continuously">
           <div className="list" style={{ fontSize: 13.5 }}>
-            <div className="list-item"><span>Monitors the P&amp;L dashboard weekly</span><Badge tone="good">Active</Badge></div>
+            <div className="list-item"><span>Reviews member revenue and loyalty cost weekly</span><Badge tone="good">Active</Badge></div>
             <div className="list-item"><span>Tests offers with campaign control groups</span><Badge tone="good">Active</Badge></div>
             <div className="list-item"><span>Acts on churn signals ({churn} guests flagged now)</span><Badge tone={churn ? "warn" : "good"}>{churn ? "Action due" : "Clear"}</Badge></div>
             <div className="list-item"><span>{messages.filter((m) => m.status === "sent").length} WhatsApp touches delivered this cycle</span><Badge>Tracked</Badge></div>

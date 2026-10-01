@@ -65,7 +65,7 @@ export function ChurnList({ rows }: { rows: ChurnRow[] }) {
                           <Link href={`/customers?q=${encodeURIComponent(r.name)}`}>View member</Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link href="/customers#record">Record a visit</Link>
+                          <Link href={`/customers?record=${encodeURIComponent(r.id)}#record`}>Record a visit</Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                           <Link href="/outbox">Open outbox</Link>

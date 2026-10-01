@@ -202,17 +202,19 @@ export async function recordVisit(input: { customer_id: string; service_id: stri
 
   // Crossing a milestone should feel instant, not "tomorrow at 10": fire milestone rules for this guest now.
   const auto = await runAutomations({ filter: (p) => p.customer.id === before.id && p.rule.type === "milestone_offer", dispatchBudgetMs: 2500 });
-  const tierAfter = tiers.find((t) => t.id === after.tier_id)!;
-  return { points_earned: earned, balance: after.points, tier: tierAfter.name, tier_upgraded: after.tier_id !== tierBeforeId, offers_issued: auto.couponsIssued };
+  const tierAfter = tiers.find((t) => t.id === after.tier_id);
+  return { points_earned: earned, balance: after.points, tier: tierAfter?.name ?? "", tier_upgraded: after.tier_id !== tierBeforeId, offers_issued: auto.couponsIssued };
 }
 
 export async function issueRewardCoupon(customerId: string, rewardId: string, validityDays?: number) {
   const [c, reward, tiers] = await Promise.all([db.get("customers", customerId), db.get("rewards", rewardId), db.list("tiers")]);
-  if (!c || !reward) throw new Error("Not found");
+  if (!c) throw new Error("Member not found");
+  if (!reward) throw new Error("Reward not found");
+  if (!reward.active) throw new Error(`${reward.name} is switched off in the catalogue`);
   if (c.points < reward.cost_points) throw new Error(`Needs ${reward.cost_points} points, has ${c.points}`);
   if (reward.tier_id) {
-    const need = tiers.find((t) => t.id === reward.tier_id)!;
-    if (c.lifetime_points < need.min_points) throw new Error(`${reward.name} unlocks at ${need.name}`);
+    const need = tiers.find((t) => t.id === reward.tier_id);
+    if (need && c.lifetime_points < need.min_points) throw new Error(`${reward.name} unlocks at ${need.name}`);
   }
   await changeMember(c.id, (fresh) => {
     if (fresh.points < reward.cost_points) throw new Error(`Needs ${reward.cost_points} points, has ${fresh.points}`);

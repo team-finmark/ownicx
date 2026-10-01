@@ -186,6 +186,9 @@ export async function createReward(_: ActionState, f: FormData): Promise<ActionS
   return attempt(async () => {
     const name = s(f, "name");
     if (!name) throw new Error("Name is required");
+    if (n(f, "cost_points", 100) <= 0) throw new Error("Cost must be at least 1 point");
+    if (n(f, "value") < 0) throw new Error("Value can't be negative");
+    if (s(f, "kind") === "percent_off" && n(f, "value") > 100) throw new Error("A % off reward can't be more than 100%");
     const reward: Reward = {
       id: db.newId("rw"),
       name,
@@ -249,6 +252,9 @@ export async function saveTier(_: ActionState, f: FormData): Promise<ActionState
   await requireManager();
   return attempt(async () => {
     const id = s(f, "id");
+    if (!s(f, "name")) throw new Error("Tier name is required");
+    if (n(f, "min_points") < 0) throw new Error("Points can't be negative");
+    if (n(f, "multiplier", 1) < 1) throw new Error("Multiplier must be 1 or more");
     await db.update("tiers", id, {
       name: s(f, "name"),
       min_points: n(f, "min_points"),
@@ -384,13 +390,18 @@ export async function saveSettings(_: ActionState, f: FormData): Promise<ActionS
   return attempt(async () => {
     const patch: Record<string, unknown> = {};
     for (const k of ["salon_name", "booking_link", "whatsapp_number", "timezone"]) if (f.has(k)) patch[k] = s(f, k);
+    if (f.has("salon_name") && !patch.salon_name) throw new Error("Salon name can't be empty");
+    if (patch.booking_link && !/^https?:\/\/\S+$/i.test(String(patch.booking_link))) throw new Error("Booking link must start with http:// or https://");
     for (const k of ["margin_goal_pct", "reward_budget_pct", "referral_level1_points", "referral_level2_points"])
       if (f.has(k)) patch[k] = n(f, k);
     if (f.has("milestone_count")) {
       const counts = f.getAll("milestone_count").map(Number);
       const labels = f.getAll("milestone_label").map(String);
       const pts = f.getAll("milestone_points").map(Number);
-      patch.referral_milestones = counts.map((count, i) => ({ count, label: labels[i], points: pts[i] || 0 })).filter((m) => m.count > 0);
+      patch.referral_milestones = counts
+        .map((count, i) => ({ count, label: labels[i]?.trim() || `${count} friends`, points: pts[i] || 0 }))
+        .filter((m) => m.count > 0)
+        .sort((a, b) => a.count - b.count);
     }
     await db.update("settings", "default", patch);
     return "Settings saved";

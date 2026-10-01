@@ -150,8 +150,8 @@ export function MemberActions({ member, coupons }: { member: EditableMember; cou
       {open && (
         <Dialog title={member.name} onClose={() => setOpen(null)}>
           <div className="tabs mb-5">
-            <a href="#" className={open === "details" ? "on" : ""} onClick={(e) => { e.preventDefault(); setOpen("details"); }}>Details</a>
-            <a href="#" className={open === "coupons" ? "on" : ""} onClick={(e) => { e.preventDefault(); setOpen("coupons"); }}>Coupons ({coupons.length})</a>
+            <button type="button" className={open === "details" ? "on" : ""} onClick={() => setOpen("details")}>Details</button>
+            <button type="button" className={open === "coupons" ? "on" : ""} onClick={() => setOpen("coupons")}>Coupons ({coupons.length})</button>
           </div>
 
           {open === "details" ? (

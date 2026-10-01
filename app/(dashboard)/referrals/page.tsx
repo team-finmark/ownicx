@@ -1,5 +1,5 @@
 import { saveSettings } from "@/app/actions";
-import { ActionForm, Submit } from "@/components/forms";
+import { ActionForm, CopyButton, Submit } from "@/components/forms";
 import { Badge, Card, DemoBanner, num, PageHeader, Person, Stat, pct } from "@/components/kit";
 import * as db from "@/lib/db";
 
@@ -45,9 +45,15 @@ export default async function Referrals() {
         <div className="ref-card">
           <div style={{ fontSize: 22, fontWeight: 650, lineHeight: 1.25 }}>Invite your friends<br />and earn rewards!</div>
           <p style={{ opacity: 0.85, fontSize: 13, marginTop: 8 }}>Share your code. You earn when your friend completes their first paid visit.</p>
-          <div className="ref-code">{star?.c.referral_code ?? "SAM1074"}</div>
-          <div className="btn" style={{ width: "100%", height: 44, border: 0, color: "var(--text)" }}>Copy your referral code</div>
-          <p style={{ fontSize: 12.5, marginTop: 12, opacity: 0.85 }}>What members see in the app and on WhatsApp</p>
+          {star ? (
+            <>
+              <div className="ref-code">{star.c.referral_code}</div>
+              <CopyButton text={star.c.referral_code} label="Copy referral code" className="btn" style={{ width: "100%", height: 44, border: 0, color: "var(--text)" }} />
+              <p style={{ fontSize: 12.5, marginTop: 12, opacity: 0.85 }}>What members see in the app and on WhatsApp · showing {star.c.name}&apos;s code</p>
+            </>
+          ) : (
+            <p style={{ fontSize: 13, marginTop: 16, opacity: 0.85 }}>Every member gets their own code when they join. It shows on the Members page.</p>
+          )}
         </div>
 
         <Card title="How does it work?" sub={star ? `${star.c.name}'s progress` : undefined}>

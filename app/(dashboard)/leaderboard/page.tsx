@@ -13,7 +13,7 @@ type Board = keyof typeof BOARDS;
 export default async function Leaderboard({ searchParams }: { searchParams: Promise<{ by?: string }> }) {
   const { by: raw = "points" } = await searchParams;
   const by: Board = raw in BOARDS ? (raw as Board) : "points";
-  const [customers, tiers, visits, referrals] = await Promise.all([db.list("customers"), db.list("tiers"), db.query("visits", { gte: { at: new Date(Date.now() - 90 * 86_400_000).toISOString() } }), db.list("referrals")]);
+  const [customers, tiers, visits, referrals, settings] = await Promise.all([db.list("customers"), db.list("tiers"), db.query("visits", { gte: { at: new Date(Date.now() - 90 * 86_400_000).toISOString() } }), db.list("referrals"), db.getSettings()]);
   const tierById = new Map(tiers.map((t) => [t.id, t]));
   const since = Date.now() - 90 * DAY;
 
@@ -33,6 +33,7 @@ export default async function Leaderboard({ searchParams }: { searchParams: Prom
     .sort((a, b) => b.s - a.s)
     .slice(0, 15);
   const max = ranked[0]?.s ?? 1;
+  const shareText = [`🏆 ${settings.salon_name} leaderboard · ${BOARDS[by].label}`, ...ranked.slice(0, 10).map(({ c, s }, i) => `${i + 1}. ${c.name.split(" ")[0]} · ${num(s)} ${BOARDS[by].unit}`)].join("\n");
   const TICKS = 48;
 
   return (
@@ -43,11 +44,16 @@ export default async function Leaderboard({ searchParams }: { searchParams: Prom
         title="Leaderboard"
         sub="Friendly competition drives visits. Share the top 10 on WhatsApp or show it on the salon TV."
         actions={
-          <div className="tabs">
-            {(Object.keys(BOARDS) as Board[]).map((b) => (
-              <Link key={b} href={`/leaderboard?by=${b}`} className={by === b ? "on" : ""}>{BOARDS[b].label}</Link>
-            ))}
-          </div>
+          <>
+            <div className="tabs">
+              {(Object.keys(BOARDS) as Board[]).map((b) => (
+                <Link key={b} href={`/leaderboard?by=${b}`} className={by === b ? "on" : ""}>{BOARDS[b].label}</Link>
+              ))}
+            </div>
+            {ranked.length > 0 && (
+              <a className="btn wa" href={`https://wa.me/?text=${encodeURIComponent(shareText)}`} target="_blank" rel="noreferrer">Share top 10 on WhatsApp</a>
+            )}
+          </>
         }
       />
       <div style={{ background: "var(--subtle)", borderRadius: 28, padding: "32px 20px" }}>
@@ -56,7 +62,7 @@ export default async function Leaderboard({ searchParams }: { searchParams: Prom
             <h2 className="card-title" style={{ textAlign: "center", marginBottom: 8 }}>{BOARDS[by].label}</h2>
             {ranked.length === 0 && <div className="empty">No scores yet.</div>}
             {ranked.map(({ c, s }, i) => {
-              const t = tierById.get(c.tier_id)!;
+              const t = tierById.get(c.tier_id);
               const on = Math.round((s / max) * TICKS);
               return (
                 <div key={c.id} className="row" style={{ gap: 16, padding: "14px 0", opacity: i < 5 ? 1 : Math.max(0.35, 1 - (i - 4) * 0.09) }}>
@@ -74,7 +80,7 @@ export default async function Leaderboard({ searchParams }: { searchParams: Prom
                     </div>
                   </div>
                   <span style={{ width: 92, display: "flex", justifyContent: "flex-end" }}>
-                    <TierBadge name={t.name} color={t.color} />
+                    {t && <TierBadge name={t.name} color={t.color} />}
                   </span>
                 </div>
               );

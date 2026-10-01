@@ -156,16 +156,22 @@ export function ActionButton({
   );
 }
 
-export function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) {
+export function CopyButton({ text, label = "Copy", className = "btn sm", style }: { text: string; label?: string; className?: string; style?: React.CSSProperties }) {
   const [done, setDone] = useState(false);
   return (
     <button
       type="button"
-      className="btn sm"
+      className={className}
+      style={style}
       onClick={async () => {
-        await navigator.clipboard.writeText(text);
-        setDone(true);
-        setTimeout(() => setDone(false), 1500);
+        try {
+          await navigator.clipboard.writeText(text);
+          setDone(true);
+          setTimeout(() => setDone(false), 1500);
+        } catch {
+          // Clipboard blocked (older browser / no permission): let the manager copy it by hand.
+          window.prompt("Copy this:", text);
+        }
       }}
     >
       {done ? "Copied" : label}

@@ -89,7 +89,15 @@ export default async function Rewards({ searchParams }: { searchParams: Promise<
           </ActionForm>
         </Card>
 
-        <Card id="redeem" title="Generate coupon codes" sub="For flyers, partners, influencers or events">
+        <div className="stack">
+        <Card id="redeem" title="Redeem a code" sub="At the counter: enter the guest's coupon code">
+          <ActionForm action={redeemCoupon} resetOnSuccess className="row wrap">
+            <input name="code" className="input mono" placeholder="CODE" required aria-label="Coupon code" style={{ textTransform: "uppercase", flex: "2 1 160px" }} />
+            <input name="bill" type="number" min={0} className="input" placeholder="Bill ₹ (for % off)" aria-label="Bill amount, needed for percentage coupons" style={{ flex: "1 1 120px" }} />
+            <Submit className="btn accent">Redeem</Submit>
+          </ActionForm>
+        </Card>
+        <Card title="Generate coupon codes" sub="For flyers, partners, influencers or events">
           <ActionForm action={generateCoupons} className="stack" style={{ gap: 12 }}>
             <div className="field"><label htmlFor="gc-l">Label</label><input id="gc-l" name="label" className="input" placeholder="₹200 off first visit" /></div>
             <div className="grid g-3" style={{ gap: 10 }}>
@@ -100,13 +108,8 @@ export default async function Rewards({ searchParams }: { searchParams: Promise<
             <div className="field"><label htmlFor="gc-d">Valid for (days)</label><input id="gc-d" name="validity_days" type="number" className="input" defaultValue={30} /></div>
             <Submit>Generate</Submit>
           </ActionForm>
-          <div className="divider" />
-          <ActionForm action={redeemCoupon} resetOnSuccess className="row wrap">
-            <input name="code" className="input mono" placeholder="Redeem at counter: CODE" required aria-label="Coupon code" style={{ textTransform: "uppercase", flex: "2 1 160px" }} />
-            <input name="bill" type="number" min={0} className="input" placeholder="Bill ₹ (for % off)" aria-label="Bill amount, needed for percentage coupons" style={{ flex: "1 1 120px" }} />
-            <Submit className="btn accent">Redeem</Submit>
-          </ActionForm>
         </Card>
+        </div>
 
         {featured && (
           <div className="ticket" aria-label="Coupon preview as the guest sees it">
@@ -133,13 +136,13 @@ export default async function Rewards({ searchParams }: { searchParams: Promise<
         <h2 className="section-title" style={{ margin: 0 }}>Coupons</h2>
         <div className="tabs">
           {["active", "redeemed", "expired"].map((s) => (
-            <Link key={s} href={`/rewards?status=${s}`} className={status === s ? "on" : ""}>{s[0].toUpperCase() + s.slice(1)}</Link>
+            <Link key={s} href={`/rewards?status=${s}`} className={tab === s ? "on" : ""}>{s[0].toUpperCase() + s.slice(1)}</Link>
           ))}
         </div>
       </div>
       <Card>
         {list.length === 0 ? (
-          <div className="empty">No {status} coupons.</div>
+          <div className="empty">No {tab} coupons.</div>
         ) : (
           <div className="table-wrap">
             <table className="tbl">

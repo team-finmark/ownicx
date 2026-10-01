@@ -47,7 +47,7 @@ export default async function Tiers() {
                   <textarea id={`${t.id}-p`} name="perks" className="textarea" rows={3} defaultValue={t.perks.join("\n")} />
                 </div>
                 <div className="row between">
-                  <span className="muted" style={{ fontSize: 12.5 }}>A {haircut.name.toLowerCase()} earns <b className="num" style={{ color: "var(--text)" }}>{num(Math.round(haircut.points * t.multiplier))} pts</b> here</span>
+                  <span className="muted" style={{ fontSize: 12.5 }}>{haircut && <>A {haircut.name.toLowerCase()} earns <b className="num" style={{ color: "var(--text)" }}>{num(Math.round(haircut.points * t.multiplier))} pts</b> here</>}</span>
                   <Submit>Save tier</Submit>
                 </div>
               </ActionForm>

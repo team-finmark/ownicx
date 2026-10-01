@@ -6,8 +6,8 @@ import { Badge, Card, DemoBanner, inr, num, PageHeader, Person, TierBadge } from
 import * as db from "@/lib/db";
 import { DAY, daysSince, formatDate, nextTier } from "@/lib/engine";
 
-export default async function Members({ searchParams }: { searchParams: Promise<{ q?: string; tier?: string; seg?: string }> }) {
-  const { q = "", tier = "", seg = "" } = await searchParams;
+export default async function Members({ searchParams }: { searchParams: Promise<{ q?: string; tier?: string; seg?: string; record?: string }> }) {
+  const { q = "", tier = "", seg = "", record = "" } = await searchParams;
   const [customers, tiers, services, rewards, coupons] = await Promise.all([db.list("customers"), db.list("tiers"), db.list("services"), db.list("rewards"), db.query("coupons", { gte: { issued_at: new Date(Date.now() - 365 * 86_400_000).toISOString() } })]);
   const tierById = new Map(tiers.map((t) => [t.id, t]));
   const segments = [...new Set(customers.flatMap((c) => c.segment))].sort();
@@ -51,7 +51,7 @@ export default async function Members({ searchParams }: { searchParams: Promise<
           <ActionForm action={recordVisitAction} className="grid form-row" style={{ gridTemplateColumns: "minmax(0, 2fr) minmax(0, 1.5fr) minmax(0, 1fr) auto", gap: 10, alignItems: "end" }}>
             <div className="field">
               <label htmlFor="rv-c">Member</label>
-              <select id="rv-c" name="customer_id" className="select" required defaultValue="">
+              <select id="rv-c" name="customer_id" className="select" required defaultValue={customers.some((c) => c.id === record) ? record : ""}>
                 <option value="" disabled>Choose…</option>
                 {sorted.map((c) => <option key={c.id} value={c.id}>{c.name} · {c.points} pts</option>)}
               </select>
@@ -104,7 +104,8 @@ export default async function Members({ searchParams }: { searchParams: Promise<
             <option value="">All segments</option>
             {segments.map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
           </select>
-          <button className="btn">Filter</button>
+          <button type="submit" className="btn">Filter</button>
+          {(q || tier || seg) && <Link className="btn ghost" href="/customers">Clear</Link>}
           <span className="muted" style={{ marginLeft: "auto" }}>{rows.length} shown</span>
         </form>
         <div className="table-wrap">
@@ -116,15 +117,15 @@ export default async function Members({ searchParams }: { searchParams: Promise<
             </thead>
             <tbody>
               {rows.map((c) => {
-                const t = tierById.get(c.tier_id)!;
-                const nt = nextTier(t, tiers);
-                const prog = nt ? Math.min(100, ((c.lifetime_points - t.min_points) / (nt.min_points - t.min_points)) * 100) : 100;
+                const t = tierById.get(c.tier_id);
+                const nt = t ? nextTier(t, tiers) : undefined;
+                const prog = t && nt ? Math.min(100, ((c.lifetime_points - t.min_points) / (nt.min_points - t.min_points)) * 100) : 100;
                 const mine = couponsBy.get(c.id) ?? [];
                 const live = mine.filter((cp) => cp.status === "active");
                 return (
                   <tr key={c.id}>
                     <td><Person name={c.name} sub={`+${c.phone} · ${c.referral_code}`} /></td>
-                    <td><TierBadge name={t.name} color={t.color} /></td>
+                    <td>{t && <TierBadge name={t.name} color={t.color} />}</td>
                     <td className="r"><b>{num(c.points)}</b></td>
                     <td style={{ minWidth: 130 }}>
                       <div className="bar"><i style={{ width: `${prog}%` }} /></div>

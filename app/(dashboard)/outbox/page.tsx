@@ -9,10 +9,11 @@ import { waLink } from "@/lib/whatsapp";
 const TABS = ["queued", "sent", "failed", "skipped"] as const;
 
 export default async function Outbox({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
-  const { tab = "queued" } = await searchParams;
+  const { tab: raw = "queued" } = await searchParams;
+  const tab = TABS.includes(raw as (typeof TABS)[number]) ? raw : "queued";
   // One tab at a time, newest 200; inbound ledger rows (guest replies) aren't outgoing messages.
   const [page, rules, campaigns, ...tabCounts] = await Promise.all([
-    db.query("messages", { eq: { status: TABS.includes(tab as (typeof TABS)[number]) ? tab : "queued" }, order: { column: "created_at", ascending: false }, limit: 200 }),
+    db.query("messages", { eq: { status: tab }, order: { column: "created_at", ascending: false }, limit: 200 }),
     db.list("automation_rules"),
     db.list("campaigns"),
     ...TABS.map((t) => db.count("messages", { eq: { status: t } })),
