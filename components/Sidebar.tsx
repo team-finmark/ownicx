@@ -31,8 +31,8 @@ export function Sidebar({ salon, demo }: { salon: string; demo: boolean }) {
         </nav>
       ))}
       <div className="sidebar-foot">
-        {demo ? "Demo data · connect Supabase to go live" : "Connected to Supabase"}
-        <div className="mt-8">
+        {demo && "Demo data · connect Supabase to go live"}
+        <div className={demo ? "mt-8" : undefined}>
           Powered by <strong>Osiq Solutions</strong>
         </div>
       </div>
