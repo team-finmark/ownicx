@@ -48,7 +48,8 @@ const PEOPLE = [
 ];
 
 async function remove() {
-  const mocks = must(await sb.from("customers").select("id, name").contains("segment", ["mock"]), "find mock members");
+  // segment is jsonb, so the containment filter must be JSON text, not an array literal.
+  const mocks = must(await sb.from("customers").select("id, name").contains("segment", JSON.stringify(["mock"])), "find mock members");
   if (mocks.length) {
     const ids = mocks.map((m) => m.id);
     // Visits/coupons/messages/referrals cascade on delete; clear referral links first.
