@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { connection } from "next/server";
+import { cache } from "react";
 import { hashPasswordSync } from "./password";
 import { buildSeed, type Db } from "./seed";
 import type { TableName, Tables } from "./types";
@@ -195,11 +196,12 @@ export async function remove(table: TableName, id: string): Promise<void> {
   if (error) throw new Error(`${table}: ${error.message}`);
 }
 
-export async function getSettings() {
+/** Salon settings. Memoised per page render, so the layout and the page share one fetch. */
+export const getSettings = cache(async () => {
   const rows = await list("settings");
   if (!rows[0]) throw new Error("settings row missing — run supabase/seed.sql");
   return rows[0];
-}
+});
 
 export function newId(prefix: string) {
   return `${prefix}_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;

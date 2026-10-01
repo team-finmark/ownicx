@@ -5,8 +5,7 @@ import { requireManager } from "@/lib/auth";
 import { getSettings, isDemo } from "@/lib/db";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const manager = await requireManager();
-  const settings = await getSettings();
+  const [manager, settings] = await Promise.all([requireManager(), getSettings()]);
   return (
     <div className="shell">
       <Sidebar salon={settings.salon_name} demo={isDemo()} />

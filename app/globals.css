@@ -426,3 +426,19 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 15px; }
 @media (max-width: 520px) {
   .g-4 { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ---------- Loading skeleton (app/(dashboard)/loading.tsx) ---------- */
+.sk {
+  border-radius: var(--r);
+  background: linear-gradient(90deg, var(--muted) 0%, oklch(0.985 0 0) 50%, var(--muted) 100%);
+  background-size: 200% 100%;
+  animation: sk-shimmer 1.2s ease-in-out infinite;
+}
+.sk-eyebrow { width: 90px; height: 14px; }
+.sk-title { width: 260px; height: 34px; margin-top: 10px; }
+.sk-sub { width: min(520px, 90%); height: 16px; margin-top: 12px; }
+.sk-card { height: 128px; border-radius: var(--r-lg); }
+.sk-panel { height: 300px; border-radius: var(--r-lg); }
+@keyframes sk-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }

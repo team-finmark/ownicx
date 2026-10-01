@@ -12,7 +12,7 @@ export default async function Overview() {
   const snap = await loadSnapshot(); // members, last ~13 months of visits, live coupons
   const { customers, visits, services, tiers, settings } = snap;
   const [plan, campaigns, redeemed90, queued] = await Promise.all([
-    previewAutomations(),
+    previewAutomations(Date.now(), snap),
     db.list("campaigns"),
     db.query("coupons", { eq: { status: "redeemed" }, gte: { redeemed_at: new Date(Date.now() - 90 * 86_400_000).toISOString() } }),
     db.count("messages", { eq: { status: "queued" } }),

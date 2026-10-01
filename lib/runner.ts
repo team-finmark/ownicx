@@ -36,8 +36,8 @@ async function plan(snap: Snapshot, now: number, respectSendHour: boolean) {
   return planned.filter((p) => !done.has(p.dedupe_key));
 }
 
-export async function previewAutomations(now = Date.now()): Promise<PlannedSend[]> {
-  return plan(await loadSnapshot(now), now, false);
+export async function previewAutomations(now = Date.now(), snap?: Snapshot): Promise<PlannedSend[]> {
+  return plan(snap ?? (await loadSnapshot(now)), now, false);
 }
 
 export interface RunResult {

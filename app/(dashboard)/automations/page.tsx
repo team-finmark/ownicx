@@ -9,7 +9,8 @@ import { loadSnapshot, previewAutomations } from "@/lib/runner";
 import { whatsappMode } from "@/lib/whatsapp";
 
 export default async function AutomationsPage() {
-  const [snap, plan] = await Promise.all([loadSnapshot(), previewAutomations()]);
+  const snap = await loadSnapshot();
+  const plan = await previewAutomations(Date.now(), snap);
   const { rules, services, tiers, settings } = snap;
   const mode = await whatsappMode();
 
