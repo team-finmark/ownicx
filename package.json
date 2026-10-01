@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "manager": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/create-manager.mjs"
+    "manager": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/create-manager.mjs",
+    "mock": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/mock-data.mjs"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.2.6",

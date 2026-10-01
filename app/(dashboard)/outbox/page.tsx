@@ -70,9 +70,16 @@ export default async function Outbox({ searchParams }: { searchParams: Promise<{
                       <td className="num text-2" style={{ whiteSpace: "nowrap" }}>{formatDate(m.created_at, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</td>
                       <td>
                         {(m.status === "queued" || m.status === "failed") && c && (
-                          <div className="row" style={{ justifyContent: "flex-end" }}>
-                            <a className="btn wa sm" href={waLink(c.phone, m.body)} target="_blank" rel="noreferrer">Send on WhatsApp</a>
-                            <ActionButton action={markMessage.bind(null, m.id, "sent")}>Mark sent</ActionButton>
+                          <div className="row wrap" style={{ justifyContent: "flex-end" }}>
+                            <Link className="btn sm" href={`/simulator?message=${m.id}`}>▶ Simulate</Link>
+                            {c.segment.includes("mock") ? (
+                              <Badge tone="warn">Demo member · not sendable</Badge>
+                            ) : (
+                              <>
+                                <a className="btn wa sm" href={waLink(c.phone, m.body)} target="_blank" rel="noreferrer">Send on WhatsApp</a>
+                                <ActionButton action={markMessage.bind(null, m.id, "sent")}>Mark sent</ActionButton>
+                              </>
+                            )}
                             <ActionButton className="btn ghost sm" action={markMessage.bind(null, m.id, "skipped")}>Skip</ActionButton>
                           </div>
                         )}

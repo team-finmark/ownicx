@@ -27,7 +27,9 @@ export async function dispatchQueued({ budgetMs = 8000, max = 300 } = {}): Promi
   if (!creds) return { mode: "click_to_chat", sent: 0, failed: 0, retrying: 0, remaining: await db.count("messages", { eq: { status: "queued" } }) };
 
   const batch = await db.query("messages", { eq: { status: "queued" }, gte: { created_at: since }, order: { column: "created_at" }, limit: max });
-  const phones = new Map((await db.queryIn("customers", "id", batch.map((m) => m.customer_id))).map((c) => [c.id, c.phone]));
+  const members = await db.queryIn("customers", "id", batch.map((m) => m.customer_id));
+  const phones = new Map(members.map((c) => [c.id, c.phone]));
+  const mock = new Set(members.filter((c) => c.segment.includes("mock")).map((c) => c.id));
   const res: DispatchResult = { mode: "cloud_api", sent: 0, failed: 0, retrying: 0, remaining: 0 };
 
   let i = 0;
@@ -38,6 +40,11 @@ export async function dispatchQueued({ budgetMs = 8000, max = 300 } = {}): Promi
       if (tries >= MAX_ATTEMPTS) continue;
       // Claim it: only one dispatcher may send a given message.
       if (!(await db.updateIf("messages", m.id, { status: "queued", attempts: m.attempts }, { attempts: tries + 1 }))) continue;
+      if (mock.has(m.customer_id)) {
+        // Demo data (scripts/mock-data.mjs): made-up numbers are never messaged.
+        await db.update("messages", m.id, { status: "skipped", error: "Demo member — never sent" });
+        continue;
+      }
       const phone = phones.get(m.customer_id);
       const r = phone ? await sendViaCloudApi(phone, m.body, creds, m.template) : { ok: false as const, error: "Member no longer exists" };
       if (r.ok) {

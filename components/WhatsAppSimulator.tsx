@@ -17,6 +17,15 @@ export interface SimMember {
   daysSince: number | null;
 }
 
+/** A real queued message from the Outbox, played as-is. */
+export interface SimPreset {
+  memberId: string;
+  ruleId: string;
+  text: string;
+  offer: string | null;
+  source: string;
+}
+
 export interface SimRule {
   id: string;
   name: string;
@@ -176,16 +185,18 @@ export function WhatsAppSimulator({
   salon,
   bookingLink,
   connection,
+  preset,
 }: {
+  preset?: SimPreset | null;
   members: SimMember[];
   rules: SimRule[];
   salon: string;
   bookingLink: string;
   connection: { automatic: boolean; phone: string | null; name: string };
 }) {
-  const [memberId, setMemberId] = useState(members[0]?.id ?? "");
-  const [ruleId, setRuleId] = useState(rules.find((r) => r.enabled)?.id ?? "campaign");
-  const [offer, setOffer] = useState("Free hair spa with any haircut");
+  const [memberId, setMemberId] = useState(preset?.memberId ?? members[0]?.id ?? "");
+  const [ruleId, setRuleId] = useState(preset?.ruleId ?? rules.find((r) => r.enabled)?.id ?? "campaign");
+  const [offer, setOffer] = useState(preset?.offer ?? "Free hair spa with any haircut");
   const [phase, setPhase] = useState(-1); // -1 idle · 0..5 steps · 6 done
   const [blocked, setBlocked] = useState(false);
   const [time, setTime] = useState("");
@@ -193,9 +204,24 @@ export function WhatsAppSimulator({
 
   const member = members.find((m) => m.id === memberId) ?? members[0];
   const rule = rules.find((r) => r.id === ruleId) ?? null;
-  const sim = useMemo(() => (member ? personalise(member, rule, offer, salon, bookingLink) : null), [member, rule, offer, salon, bookingLink]);
+  // While the Outbox selection is unchanged, the phone shows the exact queued text.
+  const usingPreset = !!preset && memberId === preset.memberId && ruleId === preset.ruleId;
+  const sim = useMemo(() => {
+    if (!member) return null;
+    const s = personalise(member, rule, offer, salon, bookingLink);
+    return usingPreset && preset ? { ...s, text: preset.text } : s;
+  }, [member, rule, offer, salon, bookingLink, usingPreset, preset]);
 
   useEffect(() => setTime(clock()), []);
+  // Opened from the Outbox → start straight away.
+  const autoplayed = useRef(false);
+  useEffect(() => {
+    if (preset && !autoplayed.current) {
+      autoplayed.current = true;
+      const t = setTimeout(() => runRef.current(), 700);
+      return () => clearTimeout(t);
+    }
+  }, [preset]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
   const reset = () => {
@@ -227,6 +253,9 @@ export function WhatsAppSimulator({
     timers.current.push(setTimeout(() => setPhase(6), t));
   };
 
+  const runRef = useRef(run);
+  runRef.current = run;
+
   if (!member || !sim) return <div className="card empty">Add a member first to use the simulator.</div>;
 
   const first = member.name.split(" ")[0];
@@ -240,6 +269,11 @@ export function WhatsAppSimulator({
     <div className="sim-grid">
       {/* ---------- Controls + process ---------- */}
       <div className="stack">
+        {usingPreset && preset && (
+          <div className="callout good" style={{ fontSize: 14 }}>
+            ▶ Playing the queued Outbox message for <b>{member?.name}</b> from {preset.source}. Change the member or message below to try others.
+          </div>
+        )}
         <div className="card">
           <div className="grid g-2" style={{ gap: 12 }}>
             <div className="field">
