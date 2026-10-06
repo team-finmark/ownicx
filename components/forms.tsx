@@ -61,6 +61,7 @@ export function ActionForm({
   style,
   resetOnSuccess,
   onSuccess,
+  globalToast,
 }: {
   action: (s: ActionState, f: FormData) => Promise<ActionState>;
   children: ReactNode;
@@ -68,8 +69,18 @@ export function ActionForm({
   style?: React.CSSProperties;
   resetOnSuccess?: boolean;
   onSuccess?: () => void;
+  /** Show the result in the page-wide toast — for forms that disappear once they succeed (e.g. Void). */
+  globalToast?: boolean;
 }) {
-  const guarded = useCallback((s: ActionState, f: FormData) => safely(() => action(s, f)), [action]);
+  const guarded = useCallback(
+    async (s: ActionState, f: FormData) => {
+      const r = await safely(() => action(s, f));
+      // Fired here, not in an effect: the form may be gone from the refreshed page by the time effects run.
+      if (globalToast && r) showToast(r);
+      return r;
+    },
+    [action, globalToast],
+  );
   const [state, formAction] = useActionState(guarded, null);
   const ref = useRef<HTMLFormElement>(null);
   const onSuccessRef = useRef(onSuccess);
@@ -87,7 +98,7 @@ export function ActionForm({
       ref={ref}
     >
       {children}
-      <Toast state={state} />
+      {!globalToast && <Toast state={state} />}
     </form>
   );
 }

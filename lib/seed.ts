@@ -1,3 +1,4 @@
+import { buildOpsSeed } from "./ops-seed";
 import type {
   AutomationRule,
   Campaign,
@@ -30,6 +31,15 @@ export const SETTINGS: Settings = {
     { count: 3, label: "+1,000 points", points: 1000 },
     { count: 5, label: "Special gift", points: 0 },
   ],
+  salon_address: "Plot 28, 1st Floor, Hitech City, Hyderabad 500081",
+  salon_phone: "+91 98000 00000",
+  gstin: "",
+  invoice_prefix: "INV",
+  opening_time: "10:00",
+  closing_time: "21:00",
+  weekly_off: [2], // closed Tuesdays
+  slot_minutes: 15,
+  paid_leave: false,
 };
 
 export const TIERS: Tier[] = [
@@ -40,15 +50,15 @@ export const TIERS: Tier[] = [
 ];
 
 export const SERVICES: Service[] = [
-  { id: "haircut", name: "Haircut", category: "Hair", price: 600, points: 5, revisit_days: 60 },
-  { id: "beard", name: "Beard trim", category: "Grooming", price: 250, points: 2, revisit_days: 21 },
-  { id: "colour", name: "Hair colour", category: "Hair", price: 2800, points: 20, revisit_days: 45 },
-  { id: "keratin", name: "Keratin treatment", category: "Hair", price: 5500, points: 40, revisit_days: 120 },
-  { id: "spa", name: "Hair spa", category: "Hair", price: 1400, points: 12, revisit_days: 30 },
-  { id: "facial", name: "Facial", category: "Skin", price: 1800, points: 15, revisit_days: 30 },
-  { id: "mani", name: "Manicure", category: "Nails", price: 700, points: 6, revisit_days: 21 },
-  { id: "pedi", name: "Pedicure", category: "Nails", price: 900, points: 8, revisit_days: 28 },
-  { id: "bridal", name: "Bridal makeup", category: "Makeup", price: 18000, points: 120, revisit_days: null },
+  { id: "haircut", name: "Haircut", category: "Hair", price: 600, points: 5, revisit_days: 60, duration_min: 45, gender: "unisex", is_active: true },
+  { id: "beard", name: "Beard trim", category: "Grooming", price: 250, points: 2, revisit_days: 21, duration_min: 20, gender: "men", is_active: true },
+  { id: "colour", name: "Hair colour", category: "Hair", price: 2800, points: 20, revisit_days: 45, duration_min: 120, gender: "unisex", is_active: true },
+  { id: "keratin", name: "Keratin treatment", category: "Hair", price: 5500, points: 40, revisit_days: 120, duration_min: 180, gender: "unisex", is_active: true },
+  { id: "spa", name: "Hair spa", category: "Hair", price: 1400, points: 12, revisit_days: 30, duration_min: 60, gender: "unisex", is_active: true },
+  { id: "facial", name: "Facial", category: "Skin", price: 1800, points: 15, revisit_days: 30, duration_min: 60, gender: "unisex", is_active: true },
+  { id: "mani", name: "Manicure", category: "Nails", price: 700, points: 6, revisit_days: 21, duration_min: 45, gender: "unisex", is_active: true },
+  { id: "pedi", name: "Pedicure", category: "Nails", price: 900, points: 8, revisit_days: 28, duration_min: 60, gender: "unisex", is_active: true },
+  { id: "bridal", name: "Bridal makeup", category: "Makeup", price: 18000, points: 120, revisit_days: null, duration_min: 180, gender: "women", is_active: true },
 ];
 
 export const REWARDS: Reward[] = [
@@ -374,6 +384,7 @@ export function buildSeed(now = Date.now()): Db {
   ];
 
   return {
+    ...buildOpsSeed({ now, customers, visits, services: SERVICES, settings: SETTINGS }),
     settings: [SETTINGS],
     tiers: TIERS,
     services: SERVICES,

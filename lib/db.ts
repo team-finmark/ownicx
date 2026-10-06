@@ -24,13 +24,25 @@ export const isDemo = () => supabase() === null;
 
 /** Demo-mode sign-in only. With Supabase connected, managers come from the `managers` table. */
 export const DEMO_MANAGER = { name: "manager", password: "ownicx123" };
+/** Demo front-desk account (role "manager"): sees bookings, billing and attendance, not payroll or finance. */
+export const DEMO_FRONT_DESK = { name: "frontdesk", password: "ownicx123" };
 
 const g = globalThis as unknown as { __ownicxDb?: Db };
 function memory(): Db {
   if (!g.__ownicxDb) {
     const seed = buildSeed();
-    seed.managers.push({ id: "mgr_demo", name: DEMO_MANAGER.name, password_hash: hashPasswordSync(DEMO_MANAGER.password), created_at: new Date().toISOString(), last_login_at: null });
+    const at = new Date().toISOString();
+    seed.managers.push(
+      { id: "mgr_demo", name: DEMO_MANAGER.name, password_hash: hashPasswordSync(DEMO_MANAGER.password), created_at: at, last_login_at: null, role: "admin" },
+      { id: "mgr_desk", name: DEMO_FRONT_DESK.name, password_hash: hashPasswordSync(DEMO_FRONT_DESK.password), created_at: at, last_login_at: null, role: "manager" },
+    );
     g.__ownicxDb = seed;
+  }
+  // A dev server that was running before new tables were added keeps its data and gains the new ones.
+  const db = g.__ownicxDb as Record<string, unknown[]>;
+  if (!db.invoices) {
+    const fresh = buildSeed() as unknown as Record<string, unknown[]>;
+    for (const k of Object.keys(fresh)) db[k] ??= fresh[k];
   }
   return g.__ownicxDb;
 }
@@ -65,7 +77,11 @@ export interface Query {
 function matches(row: Record<string, unknown>, q: Query) {
   for (const [k, v] of Object.entries(q.eq ?? {})) if (row[k] !== v) return false;
   for (const [k, vs] of Object.entries(q.in ?? {})) if (!vs.includes(row[k] as string)) return false;
-  const cmp = (a: unknown, b: unknown) => (typeof b === "string" && typeof a === "string" && /^\d{4}-\d\d-\d\dT/.test(b) ? Date.parse(a) - Date.parse(b) : (a as number) - (b as number));
+  // Timestamps compare as instants; other strings (YYYY-MM-DD dates, HH:MM times, ids) compare as text, like Postgres.
+  const cmp = (a: unknown, b: unknown) =>
+    typeof b === "string" && typeof a === "string"
+      ? /^\d{4}-\d\d-\d\dT/.test(b) ? Date.parse(a) - Date.parse(b) : a < b ? -1 : a > b ? 1 : 0
+      : (a as number) - (b as number);
   for (const [k, v] of Object.entries(q.gte ?? {})) if (row[k] === null || row[k] === undefined || cmp(row[k], v) < 0) return false;
   for (const [k, v] of Object.entries(q.lte ?? {})) if (row[k] === null || row[k] === undefined || cmp(row[k], v) > 0) return false;
   for (const [k, v] of Object.entries(q.not ?? {})) if (row[k] === v) return false;

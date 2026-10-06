@@ -41,3 +41,9 @@ insert into automation_rules (id, type, name, enabled, config, template, send_ho
   ('rule_birthday', 'birthday', 'Birthday treat', false, '{"discount_value":200,"validity_days":7}'::jsonb, 'Happy birthday {{first_name}} 🎂 Here''s ₹{{offer}} off from all of us at {{salon}} — code {{code}}, valid till {{expiry}}.', 9, 'all')
 on conflict (id) do nothing;
 
+
+-- Chair time and audience for the starter services (used by the booking calendar). Safe to re-run.
+update services set duration_min = v.d, gender = v.g
+from (values ('haircut', 45, 'unisex'), ('beard', 20, 'men'), ('colour', 120, 'unisex'), ('keratin', 180, 'unisex'), ('spa', 60, 'unisex'),
+             ('facial', 60, 'unisex'), ('mani', 45, 'unisex'), ('pedi', 60, 'unisex'), ('bridal', 180, 'women')) as v(id, d, g)
+where services.id = v.id;

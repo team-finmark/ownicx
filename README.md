@@ -16,7 +16,7 @@ With no environment variables it runs on a **built-in demo database** (48 member
 
 Every dashboard page needs a manager sign-in (name + password).
 
-- **Demo mode:** sign in as `manager` / `ownicx123` (shown on the login page only while Supabase isn't connected).
+- **Demo mode:** sign in as `manager` / `ownicx123` (owner) or `frontdesk` / `ownicx123` (front desk). Shown on the login page only while Supabase isn't connected.
 - **With Supabase:** set `SESSION_SECRET` (32+ random characters) in `.env`, then create each manager:
 
   ```bash
@@ -25,7 +25,27 @@ Every dashboard page needs a manager sign-in (name + password).
 
   Running it again for an existing name resets that password. Managers can change their own password from **My account** (top bar).
 
+  Add `manager` as a third argument for a **front-desk** login (`npm run manager -- "Ravi" "StrongPass1" manager`). Front desk can book, bill, mark attendance and work with members; payroll, finance, staff pay and the service menu are owner-only, checked on the server for every page and action. Logins created before roles existed are owners.
+
 Passwords are stored as scrypt hashes in the `managers` table. Sessions are signed, http-only cookies that expire after 12 hours. Five wrong attempts lock that name for 15 minutes. The REST API, cron and WhatsApp webhook keep their own keys and are not behind the sign-in.
+
+## Salon operations
+
+The front desk and back office sit next to the loyalty program and share its members:
+
+| Page | Who | What it does |
+|---|---|---|
+| **Appointments** | everyone | Day schedule, booking by phone (new guests become members), slots from your opening hours, no double-booking a stylist (checked in the app and by a database constraint), statuses (in chair → done → bill, no-show, cancel) |
+| **Invoices** | everyone (void: owner) | Bill builder with a stylist on every line, discount, tax %, cash/UPI/card, part payments. Numbers run consecutively per financial year (`INV2627-00042`). Saving takes products off stock (refused if short) and credits loyalty points. Print / save as PDF, send on WhatsApp. Bills are voided, never deleted |
+| **Attendance** | everyone | One tap per person per day (present, half day, leave, absent), optional times, month grid |
+| **Staff & performance** | owner | What each person billed (today / week / month / FY / custom), commission, pay details, deactivate instead of delete |
+| **Payroll** | owner | Month draft from attendance and billed sales, editable bonus / advance / deductions, paid rows lock and are booked under expenses, CSV export |
+| **Finance** | owner | Revenue, expenses, profit and margin vs the previous period, top stylists, expense ledger |
+| **Services & stock** | owner | Service menu (price, duration, points, retire), retail products, stock in/out with history |
+
+Opening hours, weekly off, invoice prefix, GSTIN and leave policy live in **Settings → Salon hours & billing**. Confirm the invoice number format and any GST treatment with your CA before going live.
+
+**Existing Supabase project?** Re-run `supabase/schema.sql` (safe to repeat) to add the new tables and columns, then `supabase/seed.sql` for service durations.
 
 ## Connect Supabase
 

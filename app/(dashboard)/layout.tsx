@@ -8,12 +8,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const [manager, settings] = await Promise.all([requireManager(), getSettings()]);
   return (
     <div className="shell">
-      <Sidebar salon={settings.salon_name} demo={isDemo()} />
+      <Sidebar salon={settings.salon_name} demo={isDemo()} role={manager.role} />
       <div className="main-col">
-        <Topbar manager={manager.name} />
+        <Topbar manager={manager.name} role={manager.role} />
         <main className="main">
           {children}
-          <PageNav />
+          <PageNav role={manager.role} />
         </main>
         <GlobalToast />
       </div>

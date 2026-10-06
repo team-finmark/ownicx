@@ -16,13 +16,15 @@ import {
 import { signOut } from "@/app/auth-actions";
 import { Icon } from "./Icon";
 import { safely, showToast } from "./forms";
-import { FLAT_NAV, isActive, PAGE_TITLES, QUICK_ACTIONS } from "@/lib/nav";
+import { FLAT_NAV, flatNavFor, isActive, PAGE_TITLES, QUICK_ACTIONS } from "@/lib/nav";
+import type { Role } from "@/lib/types";
 
 /** Sticky bar on every page: back, home, the everyday jobs, and the signed-in manager. */
-export function Topbar({ manager }: { manager: string }) {
+export function Topbar({ manager, role }: { manager: string; role: Role }) {
   const router = useRouter();
   const path = usePathname();
-  const here = FLAT_NAV.find((n) => isActive(path, n.href));
+  // Longest match wins, so /settings/operations isn't labelled "Settings".
+  const here = PAGE_TITLES[path] ? undefined : [...FLAT_NAV].sort((a, b) => b.href.length - a.href.length).find((n) => isActive(path, n.href));
   const [signingOut, startSignOut] = useTransition();
   const leave = () =>
     startSignOut(async () => {
@@ -57,7 +59,7 @@ export function Topbar({ manager }: { manager: string }) {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>
               <span className="block text-sm font-semibold">{manager}</span>
-              <span className="block text-xs font-normal text-muted-foreground">Manager</span>
+              <span className="block text-xs font-normal text-muted-foreground">{role === "admin" ? "Owner · full access" : "Front desk"}</span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild className="py-2.5 text-[15px]">
@@ -97,12 +99,13 @@ export function Topbar({ manager }: { manager: string }) {
 }
 
 /** Large previous / next buttons at the foot of every page, following the sidebar order. */
-export function PageNav() {
+export function PageNav({ role }: { role: Role }) {
   const path = usePathname();
-  const i = FLAT_NAV.findIndex((n) => isActive(path, n.href));
+  const nav = flatNavFor(role);
+  const i = nav.findIndex((n) => isActive(path, n.href));
   if (i < 0) return null;
-  const prev = FLAT_NAV[i - 1];
-  const next = FLAT_NAV[i + 1];
+  const prev = nav[i - 1];
+  const next = nav[i + 1];
   return (
     <nav className="page-nav" aria-label="Page navigation">
       {prev ? (

@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "./Icon";
-import { isActive, NAV } from "@/lib/nav";
+import { isActive, navFor } from "@/lib/nav";
+import type { Role } from "@/lib/types";
 
-export function Sidebar({ salon, demo }: { salon: string; demo: boolean }) {
+export function Sidebar({ salon, demo, role }: { salon: string; demo: boolean; role: Role }) {
   const path = usePathname();
   return (
     <aside className="sidebar">
@@ -16,7 +17,7 @@ export function Sidebar({ salon, demo }: { salon: string; demo: boolean }) {
           <div className="brand-sub">{salon}</div>
         </div>
       </Link>
-      {NAV.map((g) => (
+      {navFor(role).map((g) => (
         <nav className="nav-group" key={g.label} aria-label={g.label}>
           <div className="nav-label">{g.label}</div>
           {g.items.map((it) => {

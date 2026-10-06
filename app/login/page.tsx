@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { SignInForm } from "./SignInForm";
-import { DEMO_MANAGER, isDemo } from "@/lib/db";
+import { DEMO_FRONT_DESK, DEMO_MANAGER, isDemo } from "@/lib/db";
 
 export const metadata: Metadata = { title: "Sign in · Ownicx for salons" };
 
@@ -22,7 +22,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <SignInForm next={next} />
         {demo && (
           <div className="callout info" style={{ marginTop: 24, fontSize: 14 }}>
-            <b style={{ color: "var(--text)" }}>Demo mode.</b> Sign in with name <b>{DEMO_MANAGER.name}</b> and password <b>{DEMO_MANAGER.password}</b>. After you connect Supabase, create real managers with <span className="mono">npm run manager</span>.
+            <b style={{ color: "var(--text)" }}>Demo mode.</b> Sign in as the owner with name <b>{DEMO_MANAGER.name}</b>, or as the front desk with <b>{DEMO_FRONT_DESK.name}</b> — password <b>{DEMO_MANAGER.password}</b> for both. After you connect Supabase, create real logins with <span className="mono">npm run manager</span>.
           </div>
         )}
       </div>

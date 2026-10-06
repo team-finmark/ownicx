@@ -1,3 +1,5 @@
+import type { Role } from "./types";
+
 // Navigation map shared by the sidebar, the top quick-action bar and the previous/next buttons.
 
 export const ICONS = {
@@ -24,6 +26,11 @@ export const ICONS = {
   logout: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9",
   phone: "M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM11 18h2",
   sliders: "M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6",
+  calendar: "M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z",
+  clock: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 6v6l4 2",
+  wallet: "M20 7H5a2 2 0 0 1 0-4h13v4M3 5v14a2 2 0 0 0 2 2h15V7M16 14h.01",
+  chart: "M3 3v18h18M7 15l4-4 3 3 5-6",
+  box: "M21 8 12 3 3 8v8l9 5 9-5zM3 8l9 5 9-5M12 13v8",
 } as const;
 
 export type IconName = keyof typeof ICONS;
@@ -32,6 +39,7 @@ export interface NavItem {
   href: string;
   label: string;
   icon: IconName;
+  admin?: boolean; // owner only — hidden from front-desk managers (the page also checks on the server)
 }
 
 export const NAV: { label: string; items: NavItem[] }[] = [
@@ -42,6 +50,23 @@ export const NAV: { label: string; items: NavItem[] }[] = [
       { href: "/customers", label: "Members", icon: "users" },
       { href: "/onboarding", label: "Onboarding", icon: "onboard" },
       { href: "/campaigns", label: "Engagements", icon: "target" },
+    ],
+  },
+  {
+    label: "Front desk",
+    items: [
+      { href: "/appointments", label: "Appointments", icon: "calendar" },
+      { href: "/invoices", label: "Invoices", icon: "receipt" },
+      { href: "/attendance", label: "Attendance", icon: "clock" },
+    ],
+  },
+  {
+    label: "Back office",
+    items: [
+      { href: "/staff", label: "Staff & performance", icon: "users", admin: true },
+      { href: "/payroll", label: "Payroll", icon: "wallet", admin: true },
+      { href: "/finance", label: "Finance", icon: "chart", admin: true },
+      { href: "/catalogue", label: "Services & stock", icon: "box", admin: true },
     ],
   },
   {
@@ -72,16 +97,21 @@ export const NAV: { label: string; items: NavItem[] }[] = [
 
 export const FLAT_NAV: NavItem[] = NAV.flatMap((g) => g.items);
 
+/** The menu a role is allowed to see. */
+export const navFor = (role: Role) => NAV.map((g) => ({ ...g, items: g.items.filter((i) => role === "admin" || !i.admin) })).filter((g) => g.items.length);
+export const flatNavFor = (role: Role) => FLAT_NAV.filter((i) => role === "admin" || !i.admin);
+
 /** Pages kept out of the sidebar (reached from Settings) — still named in the top bar. */
 export const PAGE_TITLES: Record<string, string> = {
   "/account": "My account",
+  "/settings/operations": "Salon hours & billing",
 };
 
 /** The everyday front-desk jobs, one tap away on every page. */
 export const QUICK_ACTIONS: NavItem[] = [
-  { href: "/customers#record", label: "Record visit", icon: "scissors" },
+  { href: "/appointments#book", label: "Book appointment", icon: "calendar" },
+  { href: "/invoices/new", label: "New bill", icon: "receipt" },
   { href: "/onboarding#add", label: "Add member", icon: "plus" },
-  { href: "/outbox", label: "Outbox", icon: "send" },
   { href: "/rewards#redeem", label: "Redeem code", icon: "gift" },
 ];
 

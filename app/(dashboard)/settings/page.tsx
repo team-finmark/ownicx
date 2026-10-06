@@ -1,12 +1,13 @@
 import Link from "next/link";
-import { ChevronRight, KeyRound, MessageCircle, SlidersHorizontal } from "lucide-react";
+import { Clock, ChevronRight, KeyRound, MessageCircle, SlidersHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Item, ItemActions, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemSeparator, ItemTitle } from "@/components/ui/item";
+import { requireManager } from "@/lib/auth";
 import { getConnection } from "@/lib/whatsapp";
 
 export default async function Settings() {
-  const wa = await getConnection();
+  const [me, wa] = await Promise.all([requireManager(), getConnection()]);
   const waBadge =
     wa.status === "connected" && wa.mode === "cloud_api"
       ? { text: "Automatic · connected", variant: "default" as const }
@@ -18,6 +19,7 @@ export default async function Settings() {
 
   const rows = [
     { href: "/settings/whatsapp", icon: MessageCircle, title: "WhatsApp", description: wa.phone ? `+${wa.phone} · connect your number and choose how messages are sent` : "Connect your salon's WhatsApp number", badge: waBadge },
+    ...(me.role === "admin" ? [{ href: "/settings/operations", icon: Clock, title: "Salon hours & billing", description: "Opening hours, weekly off, invoice numbering, GSTIN and what prints on bills" }] : []),
     { href: "/program", icon: SlidersHorizontal, title: "Salon profile & guardrails", description: "Salon name, booking link, margin goal and reward budget" },
     { href: "/account", icon: KeyRound, title: "My account", description: "Change your sign-in password" },
   ];

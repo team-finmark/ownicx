@@ -162,7 +162,8 @@ async function payReferralMilestones(referrerId: string) {
   }
 }
 
-export async function recordVisit(input: { customer_id: string; service_id: string; amount?: unknown; at?: unknown }) {
+/** `newVisit: false` adds points and spend without counting another visit (extra services on the same bill). */
+export async function recordVisit(input: { customer_id: string; service_id: string; amount?: unknown; at?: unknown; newVisit?: boolean }) {
   const [service, tiers, settings] = await Promise.all([db.get("services", input.service_id), db.list("tiers"), db.getSettings()]);
   if (!service) throw new Error("Service not found");
   const { amount, at } = cleanVisitInput(input.amount, input.at, service.price);
@@ -174,7 +175,7 @@ export async function recordVisit(input: { customer_id: string; service_id: stri
     tierBeforeId = tierBefore.id;
     earned = pointsForVisit(service, tierBefore);
     const lifetime = c.lifetime_points + earned;
-    const visits = c.visit_count + 1;
+    const visits = c.visit_count + (input.newVisit === false ? 0 : 1);
     return {
       points: c.points + earned,
       lifetime_points: lifetime,

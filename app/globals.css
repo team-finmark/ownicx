@@ -267,7 +267,7 @@ body {
 .input.num-in { width: 96px; text-align: right; font-variant-numeric: tabular-nums; }
 .inline-num { display: inline-flex; align-items: center; gap: 8px; }
 
-.switch { position: relative; width: 52px; height: 30px; flex: none; }
+.switch { position: relative; display: inline-block; vertical-align: middle; width: 52px; height: 30px; flex: none; }
 .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
 .switch span { position: absolute; inset: 0; background: var(--border-strong); border-radius: 999px; transition: background .2s; cursor: pointer; }
 .switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: transform .2s; }
@@ -442,3 +442,47 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 15px; }
 @keyframes sk-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 @media (prefers-reduced-motion: reduce) { .sk { animation: none; } }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
+
+/* ---------- Salon operations ---------- */
+/* Inline "Edit" panels in table rows (native <details>, no JS). */
+.row-edit { position: relative; }
+.row-edit > summary { list-style: none; }
+.row-edit > summary::-webkit-details-marker { display: none; }
+.row-edit[open] > summary { background: var(--muted); }
+.row-edit-panel { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; width: min(560px, 86vw); background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-lg); padding: 18px; text-align: left; white-space: normal; }
+.tbl tr:last-child .row-edit-panel, .tbl tr:nth-last-child(2) .row-edit-panel { top: auto; bottom: calc(100% + 6px); }
+
+/* Attendance status chips */
+.chip.on.att-present { background: var(--good); border-color: var(--good); }
+.chip.on.att-half_day { background: var(--warn); border-color: var(--warn); }
+.chip.on.att-leave { background: #4b5563; border-color: #4b5563; }
+.chip.on.att-absent { background: var(--bad); border-color: var(--bad); }
+.chip input { margin: 0; }
+
+/* Attendance month grid */
+.att-grid th, .att-grid td { padding: 8px 6px; text-align: center; font-size: 12.5px; }
+.att-grid th:first-child, .att-grid td:first-child { text-align: left; padding-left: 26px; }
+.att-grid th.off, .att-grid td.off { background: var(--subtle-2); color: var(--text-3); }
+.att-grid td.att { font-weight: 700; min-width: 26px; }
+.att-grid td.present { color: var(--good); background: var(--good-soft); }
+.att-grid td.half_day { color: var(--warn); background: var(--warn-soft); }
+.att-grid td.leave { color: #374151; background: #f3f4f6; }
+.att-grid td.absent { color: var(--bad); background: var(--bad-soft); }
+
+/* Invoice sheet */
+.invoice-sheet { position: relative; overflow: hidden; }
+.invoice-lines { margin-left: 0; margin-right: 0; }
+.invoice-lines th, .invoice-lines td { padding: 10px 8px; }
+.invoice-totals { grid-template-columns: 1fr auto; margin: 18px 0 0 auto; max-width: 320px; font-variant-numeric: tabular-nums; }
+.invoice-totals dd { text-align: right; }
+.void-stamp { position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%) rotate(-18deg); font-size: 110px; font-weight: 800; letter-spacing: .1em; color: var(--bad); opacity: .14; pointer-events: none; }
+
+@media print {
+  @page { size: A4; margin: 14mm; }
+  .sidebar, .topbar, .page-nav, .no-print, .toast, .demo-banner { display: none !important; }
+  .shell { display: block; }
+  .main { padding: 0; max-width: none; }
+  .grid.g-main { display: block; }
+  .invoice-sheet { border: 0; box-shadow: none; padding: 0; }
+  .tbl tbody tr:hover td { background: none; }
+}

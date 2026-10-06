@@ -5,6 +5,7 @@ import { cache } from "react";
 import * as db from "./db";
 import { passwordFingerprint } from "./password";
 import { SESSION_COOKIE, verifySession } from "./session";
+import type { Role } from "./types";
 
 /** The signed-in manager, or null. The session is re-checked against the managers table on every request. */
 export const getManager = cache(async () => {
@@ -13,13 +14,27 @@ export const getManager = cache(async () => {
   const manager = await db.get("managers", session.sub);
   // A session signed before the password last changed is dead.
   if (!manager || session.pv !== passwordFingerprint(manager.password_hash)) return null;
-  return { id: manager.id, name: manager.name };
+  return { id: manager.id, name: manager.name, role: (manager.role ?? "admin") as Role };
 });
 
 /** Use at the top of every protected page, layout and server action. */
 export async function requireManager() {
   const m = await getManager();
   if (!m) redirect("/login");
+  return m;
+}
+
+/** Owner-only pages (payroll, finance, staff, catalogue edits). Front-desk managers are sent to their day view. */
+export async function requireAdmin() {
+  const m = await requireManager();
+  if (m.role !== "admin") redirect("/appointments?denied=1");
+  return m;
+}
+
+/** Owner-only server actions: throws a message the toast can show (the role is re-read from the database). */
+export async function requireAdminAction() {
+  const m = await requireManager();
+  if (m.role !== "admin") throw new Error("Only the owner can do this. Ask an admin to sign in.");
   return m;
 }
 
